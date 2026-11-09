@@ -1,0 +1,1276 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Marmara Şifa Özel Hastanesi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+:root {
+  /* world: night sky and light particles; one glowing subject per scene, text hugs the edges, the centre stays open */
+  --bg: #02060A;
+  --ink: #E9F2F0;
+  --muted: #8CA3A6;
+  --accent: #8FEAC5;
+  --sun: #FFB45E;
+  --night: #0A1F5C;
+  --glass: rgba(255, 255, 255, 0.055);
+  --line: rgba(255, 255, 255, 0.16);
+  --display: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  --body: "IBM Plex Sans", system-ui, "Segoe UI", sans-serif;
+  --gut: clamp(20px, 5vw, 72px);
+  --nav: 72px;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg); }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 400 16px/1.6 var(--body); overflow-x: clip; -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* ---------- fixed layers ---------- */
+.sky { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0;
+  background: radial-gradient(72% 64% at 64% 42%, rgba(26, 62, 178, 0.62), rgba(10, 31, 92, 0.4) 42%, transparent 78%); }
+#gl { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+.beam { position: fixed; z-index: 1; left: 50%; top: 58%; width: 170vmax; height: 13vmax; pointer-events: none; opacity: 0;
+  background: linear-gradient(90deg, transparent, rgba(30, 80, 255, 0.5) 38%, rgba(140, 185, 255, 0.95) 50%, rgba(30, 80, 255, 0.5) 62%, transparent);
+  filter: blur(22px); mix-blend-mode: screen; transform: translate(-50%, -50%) rotate(-38deg); }
+main { position: relative; z-index: 2; }
+
+/* ---------- nav ---------- */
+.nav { position: fixed; inset: 0 0 auto 0; z-index: 20; height: var(--nav); display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 var(--gut); }
+.nav::before { content: ""; position: absolute; inset: 0 0 -28px 0; z-index: -1; background: linear-gradient(to bottom, rgba(2, 6, 10, 0.94) 58%, rgba(2, 6, 10, 0)); opacity: 0; transition: opacity 0.3s; }
+.nav.scrolled::before { opacity: 1; }
+.brand { display: flex; align-items: center; gap: 10px; padding: 6px 12px 6px 7px; text-decoration: none; border: 1px solid var(--line); border-radius: 6px; background: var(--glass); backdrop-filter: blur(10px); }
+.b-icon { width: 34px; height: 34px; display: block; flex: none; }
+.b-word { height: 34px; width: calc(34px * 372.5 / 108); display: block; flex: none; }
+.w1 { fill: var(--ink); }
+.w2 { fill: #A9BDC0; }
+.links { display: flex; gap: 2px; padding: 8px 6px; border-left: 2px solid var(--accent); border-right: 2px solid var(--accent); background: var(--glass); backdrop-filter: blur(10px); }
+.links a { font: 500 11px/1 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; text-decoration: none; padding: 9px 12px; opacity: 0.74; transition: opacity 0.2s, color 0.2s; }
+.links a:hover, .links a[aria-current="true"] { opacity: 1; color: var(--accent); }
+.emg { display: flex; align-items: center; gap: 12px; padding: 6px 6px 6px 14px; text-decoration: none; font: 500 11px/1 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; border: 1px solid var(--line); border-right: 3px solid var(--accent); background: var(--glass); backdrop-filter: blur(10px); }
+.emg b { background: var(--accent); color: #03130E; padding: 7px 9px; font-weight: 600; border-radius: 2px; }
+.menu-btn { display: none; font: 500 11px/1 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink); background: var(--glass); border: 1px solid var(--line); border-radius: 4px; padding: 13px 14px; cursor: pointer; backdrop-filter: blur(10px); }
+.menu { position: fixed; inset: 0; z-index: 19; background: rgba(2, 6, 10, 0.94); backdrop-filter: blur(16px); padding: calc(var(--nav) + 24px) var(--gut) 32px; overflow: auto; }
+.menu[hidden] { display: none; }
+.menu a { display: block; padding: 14px 0; font: 300 clamp(28px, 7vw, 44px)/1.1 var(--display); text-transform: uppercase; text-decoration: none; color: var(--accent); border-bottom: 1px solid var(--line); }
+@media (max-width: 1100px) { .links { display: none; } .menu-btn { display: inline-block; } }
+@media (max-width: 520px) { .emg span { display: none; } .emg { padding-left: 6px; } .b-word { height: 28px; width: calc(28px * 372.5 / 108); } .b-icon { width: 28px; height: 28px; } }
+
+/* ---------- type ---------- */
+.label { font: 500 11px/1.6 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; margin: 0; }
+.label.m, .m { color: var(--muted); }
+.acc { color: var(--accent); }
+.display { font-family: var(--display); font-weight: 300; text-transform: uppercase; color: var(--accent); margin: 0; line-height: 1.02; letter-spacing: -0.005em; white-space: pre-line; text-wrap: balance; text-shadow: 0 0 40px rgba(2, 6, 10, 0.55); }
+.d-xl { font-size: clamp(34px, 6vw, 92px); }
+.d-lg { font-size: clamp(30px, 4.4vw, 66px); }
+.d-md { font-size: clamp(24px, 3vw, 44px); }
+.d-sm { font-size: clamp(20px, 2vw, 28px); }
+.p { margin: 0; color: rgba(233, 242, 240, 0.78); font-size: 15px; line-height: 1.65; max-width: 52ch; text-shadow: 0 0 18px rgba(2, 6, 10, 0.7); }
+.right { text-align: right; margin-left: auto; }
+
+.btn { display: inline-flex; align-items: center; font: 600 12px/1 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; text-decoration: none; color: #06120E; background: #F2F7F6; padding: 16px 22px; border-radius: 3px 0 0 3px; }
+.btn-sq { display: grid; place-items: center; width: 48px; background: var(--accent); color: #06120E; text-decoration: none; font-size: 18px; border-radius: 0 3px 3px 0; }
+.cta { display: inline-flex; }
+.cta:hover .btn, .cta:hover .btn-sq { filter: brightness(1.1); }
+
+.glass { background: var(--glass); border: 1px solid var(--line); border-left: 3px solid var(--accent); backdrop-filter: blur(14px) saturate(1.2); padding: 18px 20px; border-radius: 4px; }
+.glass h3 { margin: 6px 0 8px; font: 500 18px/1.25 var(--display); color: var(--ink); }
+.glass p { margin: 0; font-size: 14px; line-height: 1.6; color: rgba(233, 242, 240, 0.76); }
+.idx { font: 500 11px/1 var(--mono); letter-spacing: 0.14em; color: var(--accent); }
+
+/* ---------- scenes: flow by default, pinned in story mode ---------- */
+.scene { position: relative; }
+.pin { position: relative; display: flex; flex-direction: column; gap: 28px; padding: calc(var(--nav) + 36px) var(--gut) 56px; }
+.head { display: flex; flex-direction: column; gap: 12px; max-width: 760px; }
+.story .scene[data-pin] { height: var(--h); }
+.story .scene[data-pin] .pin { position: sticky; top: 0; height: 100vh; overflow: hidden; padding-top: calc(var(--nav) + 28px); padding-bottom: 36px; }
+.stack { display: block; }
+.story .stack { display: grid; }
+.story .stack > * { grid-area: 1 / 1; }
+
+/* hero */
+.hero { justify-content: flex-end; min-height: 100svh; }
+.hero-lead { max-width: 34ch; margin-bottom: auto; }
+.hero-lead .label + .label { margin-top: 14px; color: rgba(233, 242, 240, 0.8); }
+.hero-bottom { display: flex; align-items: flex-end; justify-content: space-between; gap: 32px; flex-wrap: wrap; }
+.hero-lead .panel { margin-top: 22px; }
+.hero h1 { margin-bottom: 26px; max-width: 14ch; }
+@media (min-width: 900px) { .hero h1 { max-width: none; } }
+.panel { width: min(100%, 340px); padding: 14px 16px; border: 1px solid var(--line); border-right: 3px solid var(--accent); background: var(--glass); backdrop-filter: blur(12px); border-radius: 4px; }
+.panel .row { display: flex; justify-content: space-between; gap: 12px; font: 500 11px/1.9 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; }
+.track { position: relative; height: 6px; margin: 12px 0 6px; background: rgba(255, 255, 255, 0.12); border-radius: 3px; }
+.track i { position: absolute; top: 0; bottom: 0; background: var(--accent); opacity: 0.75; border-radius: 3px; }
+.track b { position: absolute; top: -4px; width: 2px; height: 14px; background: #fff; box-shadow: 0 0 8px #fff; }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--accent); margin-right: 8px; }
+.dot.off { background: #667; box-shadow: none; }
+.scroll-hint { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); color: var(--muted); display: none; }
+.story .scroll-hint { display: block; }
+
+/* numbers */
+.nums { min-height: 100vh; }
+.col { list-style: none; margin: 0; padding: 0; display: grid; gap: clamp(10px, 2vh, 28px); }
+.stat b { display: block; font: 300 clamp(30px, min(3.6vw, 5.6vh), 54px)/1 var(--display); letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.stat span { display: block; margin-top: 6px; font: 500 11px/1.4 var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.nums-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
+.story .nums .head .p { display: none; }
+.story .nums .col { position: absolute; top: calc(var(--nav) + 130px); width: min(26vw, 340px); mask-image: linear-gradient(to bottom, transparent, #000 10%, #000 90%, transparent); -webkit-mask-image: linear-gradient(to bottom, transparent, #000 10%, #000 90%, transparent); }
+.story .nums .nums-grid { display: block; }
+.story .nums .col-l { left: var(--gut); }
+.story .nums .col-r { right: var(--gut); text-align: right; }
+.nums-foot { display: flex; align-items: flex-end; justify-content: space-between; gap: 32px; flex-wrap: wrap; margin-top: auto; }
+.team { width: min(100%, 470px); }
+.bar { display: flex; gap: 4px; height: 10px; margin: 10px 0 8px; }
+.bar i { display: block; background: var(--accent); border-radius: 2px; transform-origin: left; }
+.bar i:nth-child(2) { opacity: 0.62; }
+.bar i:nth-child(3) { opacity: 0.32; }
+.legend { display: flex; justify-content: space-between; gap: 12px; font: 500 10px/1.5 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.legend b { color: var(--ink); font-weight: 600; }
+
+/* mission / vision / values */
+.mv { min-height: 100vh; justify-content: center; }
+.mv-a, .mv-b { display: flex; flex-direction: column; gap: 14px; max-width: min(46vw, 640px); }
+.mv-b { margin-left: auto; text-align: right; align-items: flex-end; }
+.story .mv-a, .story .mv-b { align-self: stretch; justify-self: start; }
+.story .mv-b { justify-self: end; }
+.values { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; align-self: end; }
+.story .values { align-self: end; }
+.values .glass { padding: 14px 16px; }
+.values .glass h3 { font-size: 16px; margin: 4px 0 4px; }
+.values .glass p { font-size: 13px; line-height: 1.5; }
+.story .mv > .label.top { position: absolute; }
+
+/* infrastructure cards */
+.infra-head { max-width: 560px; display: flex; flex-direction: column; gap: 14px; }
+.cards { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.story .cards { position: absolute; inset: 0; display: block; pointer-events: none; }
+.story .fcard { position: absolute; top: 0; width: min(310px, 26vw); pointer-events: auto; will-change: transform, opacity, filter; }
+.note-r { max-width: 36ch; }
+.story .note-r { position: absolute; right: var(--gut); bottom: 40px; text-align: right; }
+.story .infra-head { position: relative; z-index: 2; }
+
+/* units */
+.units { gap: 40px; }
+.unit { display: grid; grid-template-columns: minmax(180px, 0.8fr) 1.2fr; gap: 28px 48px; align-items: center; padding: 18px 0; }
+.unit .big { font: 300 clamp(72px, 13vw, 190px)/0.9 var(--display); color: var(--accent); letter-spacing: -0.02em; margin: 0; text-shadow: 0 0 60px rgba(143, 234, 197, 0.25); }
+.unit .big small { display: block; font: 500 12px/1.5 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink); margin-top: 14px; text-shadow: none; }
+.unit .glass { max-width: 520px; }
+.unit ul { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 12px; }
+.unit li { padding-left: 18px; position: relative; font-size: 15px; line-height: 1.55; color: rgba(233, 242, 240, 0.86); }
+.unit li::before { content: ""; position: absolute; left: 0; top: 0.62em; width: 8px; height: 2px; background: var(--accent); }
+.unit h3 { margin: 0; font: 400 clamp(22px, 2.4vw, 34px)/1.1 var(--display); text-transform: uppercase; }
+.rail { display: flex; gap: 8px; margin-top: auto; }
+.rail span { flex: 1; font: 500 11px/1 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); padding-top: 10px; border-top: 2px solid var(--line); transition: color 0.3s, border-color 0.3s; }
+.rail span.on { color: var(--accent); border-color: var(--accent); }
+.story .unit { padding: 0; }
+
+/* diagnostics */
+.diag { display: grid; grid-template-columns: minmax(240px, 0.8fr) 1.2fr; gap: 28px 56px; align-items: start; }
+.dlist { display: grid; gap: 4px; }
+.dbtn { display: flex; gap: 14px; align-items: baseline; text-align: left; font: 400 clamp(20px, 2.2vw, 30px)/1.2 var(--display); text-transform: uppercase; color: var(--muted); background: none; border: 0; border-left: 2px solid var(--line); padding: 10px 0 10px 18px; cursor: pointer; transition: color 0.3s, border-color 0.3s; }
+.dbtn .idx { color: inherit; }
+.dbtn.on { color: var(--accent); border-color: var(--accent); }
+.dpanes .glass { max-width: 560px; }
+.dpanes ul { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 12px; }
+.dpanes li { padding-left: 18px; position: relative; font-size: 15px; line-height: 1.55; color: rgba(233, 242, 240, 0.86); }
+.dpanes li::before { content: ""; position: absolute; left: 0; top: 0.62em; width: 8px; height: 2px; background: var(--accent); }
+.story .dpanes { display: grid; }
+.story .dpanes > * { grid-area: 1 / 1; }
+.dpanes > * { margin-bottom: 14px; }
+.story .dpanes > * { margin-bottom: 0; }
+
+/* floors */
+.floors { display: grid; grid-template-columns: 1fr 1fr; gap: 28px 56px; align-items: center; flex: 1; }
+.iso { position: relative; height: min(52vh, 440px); min-height: 320px; perspective: 1600px; }
+.iso-stack { position: absolute; inset: 9% 0 -6% 0; transform-style: preserve-3d; transform: rotateX(62deg) rotateZ(-38deg) scale(1); }
+.plate { position: absolute; left: 50%; top: 50%; width: 400px; height: 280px; margin: -140px 0 0 -200px; border: 1px solid var(--line); background: linear-gradient(135deg, rgba(143, 234, 197, 0.06), rgba(10, 31, 92, 0.3)); color: var(--muted); font: 500 12px/1 var(--mono); letter-spacing: 0.14em; text-align: left; padding: 10px; cursor: pointer; transform: translateZ(calc(var(--i) * 40px)); transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.3s, background 0.3s, box-shadow 0.3s, color 0.3s; }
+.plate.on { transform: translateZ(calc(var(--i) * 40px + 34px)); border-color: var(--accent); color: var(--accent); background: linear-gradient(135deg, rgba(143, 234, 197, 0.24), rgba(10, 31, 92, 0.4)); box-shadow: 0 0 44px rgba(143, 234, 197, 0.28); }
+.fdetail .num { font: 300 clamp(84px, 12vw, 170px)/0.85 var(--display); color: var(--accent); margin: 0 0 8px; }
+.fdetail h3 { margin: 0 0 14px; font: 400 clamp(22px, 2.4vw, 34px)/1.15 var(--display); text-transform: uppercase; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.chips li { font: 500 11px/1 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; padding: 9px 11px; border: 1px solid var(--line); background: var(--glass); border-radius: 3px; }
+.floor-note { max-width: 64ch; }
+
+/* branches */
+.branch { min-height: 100vh; }
+.bctrl { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.fchip { font: 500 11px/1 var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink); background: var(--glass); border: 1px solid var(--line); padding: 11px 14px; border-radius: 3px; cursor: pointer; transition: background 0.2s, color 0.2s, border-color 0.2s; }
+.fchip[aria-pressed="true"] { background: var(--accent); color: #03130E; border-color: var(--accent); }
+.search { margin-left: auto; font: 400 14px/1 var(--body); color: var(--ink); background: var(--glass); border: 1px solid var(--line); border-radius: 3px; padding: 11px 14px; min-width: 220px; }
+.search::placeholder { color: var(--muted); }
+.tags { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+.tag { display: flex; flex-direction: column; gap: 6px; padding: 14px 16px; border: 1px solid var(--line); border-left: 3px solid var(--accent); background: var(--glass); backdrop-filter: blur(10px); border-radius: 4px; font: 400 16px/1.3 var(--display); }
+.tag small { font: 500 10px/1 var(--mono); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.count { font: 500 11px/1 var(--mono); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+
+/* appointment */
+.appt { min-height: 100vh; }
+.ways { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; }
+.steps { position: relative; display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; list-style: none; margin: 0; padding: 26px 0 0; counter-reset: s; }
+.steps::before, .steps::after { content: ""; position: absolute; left: 0; top: 10px; height: 2px; background: var(--line); width: 100%; }
+.steps::after { background: var(--accent); width: calc(var(--prog, 0) * 100%); box-shadow: 0 0 12px var(--accent); }
+.steps li { position: relative; opacity: 0.45; transition: opacity 0.4s; }
+.steps li.on { opacity: 1; }
+.steps li::before { content: ""; position: absolute; left: 0; top: -22px; width: 10px; height: 10px; border-radius: 50%; background: var(--bg); border: 2px solid var(--line); transition: border-color 0.3s, background 0.3s; }
+.steps li.on::before { border-color: var(--accent); background: var(--accent); }
+.steps h3 { margin: 4px 0 6px; font: 500 20px/1.2 var(--display); text-transform: uppercase; }
+.steps p { margin: 0; font-size: 14px; color: rgba(233, 242, 240, 0.76); }
+.bring { display: grid; gap: 10px; }
+.bring ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.bring li { padding-left: 18px; position: relative; font-size: 15px; }
+.bring li::before { content: ""; position: absolute; left: 0; top: 0.7em; width: 8px; height: 2px; background: var(--accent); }
+
+/* rights */
+.rights { min-height: 100vh; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 28px 40px; }
+.rlist { list-style: none; margin: 14px 0 0; padding: 0; display: grid; gap: 14px; }
+.rlist li { padding-left: 18px; position: relative; font-size: 15px; line-height: 1.55; color: rgba(233, 242, 240, 0.86); }
+.rlist li::before { content: ""; position: absolute; left: 0; top: 0.65em; width: 8px; height: 2px; background: var(--accent); }
+.rlist b { font-weight: 500; color: var(--ink); }
+.kvkk { display: grid; gap: 10px; }
+.kvkk p { margin: 0; font-size: 15px; line-height: 1.65; color: rgba(233, 242, 240, 0.82); max-width: 78ch; }
+
+/* finale */
+.finale { align-items: center; justify-content: flex-end; text-align: center; min-height: 100vh; }
+.fin-space { flex: 1; min-height: 42vh; }
+.fin-copy { display: flex; flex-direction: column; align-items: center; gap: 22px; }
+.f-word { display: block; width: min(80vw, 520px); height: calc(min(80vw, 520px) * 108 / 372.5); }
+
+/* contact + footer */
+.contact { min-height: 80vh; }
+.visit { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.reach { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0; border-top: 1px solid var(--line); }
+.reach > div { padding: 18px 0; border-bottom: 1px solid var(--line); display: grid; gap: 6px; padding-right: 20px; }
+.reach a { text-decoration: none; }
+.reach a:hover { color: var(--accent); }
+.reach .v { font: 400 clamp(18px, 1.8vw, 24px)/1.3 var(--display); overflow-wrap: anywhere; }
+.foot { position: relative; z-index: 2; padding: 28px var(--gut) 40px; border-top: 1px solid var(--line); color: var(--muted); font: 400 12px/1.7 var(--mono); letter-spacing: 0.04em; background: rgba(2, 6, 10, 0.7); }
+.foot p { margin: 0; max-width: 110ch; }
+
+/* ---------- narrow screens ---------- */
+@media (max-width: 900px) {
+  .unit, .diag, .floors, .two { grid-template-columns: 1fr; }
+  .values { grid-template-columns: 1fr 1fr; }
+  .steps { grid-template-columns: 1fr; padding: 0 0 0 26px; }
+  .steps::before, .steps::after { left: 10px; top: 0; width: 2px; height: 100%; }
+  .steps::after { height: calc(var(--prog, 0) * 100%); width: 2px; }
+  .steps li::before { left: -22px; top: 6px; }
+  .search { margin-left: 0; width: 100%; }
+  .mv-a, .mv-b { max-width: none; }
+  .iso { height: 340px; }
+  .plate { width: 240px; height: 170px; margin: -85px 0 0 -120px; }
+  .nums-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 560px) {
+  .values { grid-template-columns: 1fr; }
+  .nums-grid { gap: 18px; }
+  .hero-bottom { align-items: stretch; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="lg-icon" viewBox="8 8 108 108">
+      <circle cx="62.2" cy="62" r="51.9" fill="#0B6A62"/>
+      <rect x="51.75" y="32.3" width="21.1" height="7.8" rx="2.4" fill="#fff"/>
+      <rect x="58.4" y="25.65" width="7.8" height="21.2" rx="2.4" fill="#fff"/>
+      <path d="M36.14 86.64V58.9L62.2 75.7L88.3 58.9V86.64" fill="none" stroke="#fff" stroke-width="8.1" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M37.30 99.45L37.80 99.16L38.30 98.85L38.80 98.55L39.30 98.26L39.80 97.97L40.30 97.70L40.80 97.45L41.30 97.22L41.80 97.01L42.30 96.83L42.80 96.69L43.30 96.57L43.80 96.50L44.30 96.46L44.80 96.45L45.30 96.49L45.80 96.56L46.30 96.66L46.80 96.80L47.30 96.97L47.80 97.17L48.30 97.40L48.80 97.65L49.30 97.92L49.80 98.20L50.30 98.49L50.80 98.79L51.30 99.10L51.80 99.39L52.30 99.69L52.80 99.96L53.30 100.23L53.80 100.47L54.30 100.69L54.80 100.88L55.30 101.04L55.80 101.17L56.30 101.27L56.80 101.33L57.30 101.35L57.80 101.33L58.30 101.28L58.80 101.20L59.30 101.07L59.80 100.92L60.30 100.73L60.80 100.52L61.30 100.28L61.80 100.02L62.30 99.74L62.80 99.45L63.30 99.16L63.80 98.85L64.30 98.55L64.80 98.26L65.30 97.97L65.80 97.70L66.30 97.45L66.80 97.22L67.30 97.01L67.80 96.83L68.30 96.69L68.80 96.57L69.30 96.50L69.80 96.46L70.30 96.45L70.80 96.49L71.30 96.56L71.80 96.66L72.30 96.80L72.80 96.97L73.30 97.17L73.80 97.40L74.30 97.65L74.80 97.92L75.30 98.20L75.80 98.49L76.30 98.79L76.80 99.10L77.30 99.39L77.80 99.69L78.30 99.96L78.80 100.23L79.30 100.47L79.80 100.69L80.30 100.88L80.80 101.04L81.30 101.17L81.80 101.27L82.30 101.33L82.80 101.35L83.30 101.33L83.80 101.28L84.30 101.20L84.80 101.07L85.30 100.92L85.80 100.73L86.30 100.52L86.80 100.28L87.30 100.02" fill="none" stroke="#A9D0CE" stroke-width="3.9" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="lg-word" viewBox="146 8 372.5 108">
+      <path class="w1" fill-rule="evenodd" d="M149.72 78.54C149.4 78.45 148.5 77.26 148.5 76.91C148.5 76.49 148.8 75.96 149.27 75.56C149.61 75.28 149.76 75.23 150.21 75.28C151.6 75.44 152.15 76.72 151.31 77.83C150.83 78.46 150.31 78.69 149.72 78.54ZM154.61 78.5C153.37 78.15 152.94 77.03 153.62 75.91C153.93 75.4 154.91 75.13 155.46 75.42C156.08 75.74 156.62 76.48 156.62 77.0C156.62 77.28 155.62 78.34 155.19 78.49C155.05 78.55 154.79 78.55 154.61 78.5ZM513.17 77.96C512.35 77.14 512.32 76.88 513.0 76.03C513.69 75.16 514.19 75.02 514.98 75.5C516.03 76.15 515.96 77.7 514.84 78.38C514.2 78.77 513.91 78.7 513.17 77.96ZM418.1 74.52C417.34 74.02 417.2 73.75 417.29 72.89C417.41 71.82 417.61 71.24 418.01 70.85L418.37 70.49 L418.96 70.57L419.56 70.64 L420.03 70.25C420.91 69.52 421.09 68.6 420.53 67.75C420.42 67.58 420.24 67.26 420.13 67.04C420.02 66.81 419.58 66.27 419.15 65.82C418.44 65.1 418.29 65.0 417.65 64.87C416.47 64.64 414.26 63.85 413.58 63.41C413.23 63.18 412.89 63.0 412.83 63.0C412.43 63.0 410.26 60.86 409.84 60.05C409.73 59.84 409.55 59.6 409.45 59.51C409.34 59.42 409.11 58.92 408.95 58.39C408.78 57.87 408.55 57.18 408.43 56.88C408.29 56.5 408.2 55.74 408.16 54.56L408.09 52.8 L408.4 52.45L408.71 52.09 L411.89 52.08C415.83 52.08 415.88 52.1 415.88 53.69C415.88 55.27 416.4 56.28 417.75 57.33C418.84 58.17 420.89 58.49 422.8 58.11C424.2 57.82 425.52 56.17 425.53 54.67C425.54 53.59 425.0 52.4 424.14 51.61C423.28 50.82 422.47 50.24 421.92 50.04C421.7 49.96 421.24 49.7 420.9 49.46C420.55 49.23 420.12 48.99 419.93 48.95C419.75 48.9 419.31 48.67 418.96 48.43C418.6 48.19 418.23 48.0 418.12 48.0C418.01 48.0 417.59 47.78 417.18 47.52C416.77 47.25 416.3 46.99 416.12 46.94C415.95 46.89 415.73 46.77 415.62 46.69C415.52 46.6 415.13 46.35 414.75 46.12C412.73 44.95 411.46 43.77 409.95 41.66C409.2 40.62 409.17 40.57 408.72 39.09C408.42 38.08 408.32 37.52 408.28 36.44C408.23 35.04 408.26 34.82 408.86 32.6C409.3 30.99 410.78 28.91 412.23 27.88C413.01 27.32 415.61 26.0 415.91 26.0C416.02 26.0 416.58 25.88 417.15 25.74C418.77 25.34 421.24 25.28 422.81 25.6C423.5 25.74 424.34 25.9 424.69 25.94C425.38 26.04 427.64 27.06 428.49 27.67C430.9 29.39 432.67 32.25 432.98 34.9C433.25 37.15 433.12 38.04 432.5 38.38C432.34 38.46 431.19 38.5 429.34 38.49C425.6 38.46 425.47 38.41 425.33 36.69C425.17 34.65 424.29 33.39 422.5 32.6L421.56 32.19 L420.25 32.19L418.94 32.2 L418.25 32.56C417.39 33.0 416.98 33.38 416.46 34.18L416.06 34.81 L416.07 35.93L416.07 37.06 L416.56 37.86C417.11 38.74 418.21 39.79 418.87 40.08C419.11 40.18 419.42 40.37 419.56 40.5C419.7 40.62 420.15 40.88 420.56 41.06C420.97 41.24 421.39 41.46 421.5 41.56C421.6 41.65 421.99 41.85 422.36 42.0C422.74 42.14 423.21 42.39 423.43 42.54C423.64 42.69 424.03 42.91 424.31 43.04C424.58 43.16 424.99 43.4 425.21 43.57C425.43 43.74 425.76 43.93 425.95 44.0C426.13 44.07 426.76 44.45 427.34 44.85C427.92 45.24 428.62 45.71 428.89 45.89C430.65 47.08 432.68 49.73 432.98 51.26C433.33 52.97 433.37 53.97 433.18 55.59C432.97 57.43 432.89 57.72 432.28 59.0C430.99 61.7 428.09 63.92 424.97 64.61C423.97 64.83 423.72 65.5 424.39 66.09C424.6 66.28 425.04 66.97 425.36 67.62L425.94 68.81 L425.92 70.0C425.9 72.18 425.15 73.45 423.4 74.28L422.31 74.8 L420.5 74.85L418.69 74.89 L418.1 74.52ZM147.21 64.61C146.61 64.26 146.62 64.87 146.62 45.08L146.62 26.52 L147.01 26.2L147.39 25.88 L150.45 25.88C152.75 25.88 153.61 25.92 153.92 26.05C154.32 26.21 155.0 26.9 155.0 27.14C155.0 27.21 155.15 27.46 155.33 27.7C155.51 27.93 155.8 28.39 155.98 28.72C156.33 29.34 156.74 30.01 157.53 31.24C157.79 31.64 158.0 32.03 158.0 32.1C158.0 32.17 158.13 32.39 158.3 32.58C158.46 32.78 158.76 33.25 158.97 33.62C159.17 34.0 159.47 34.52 159.64 34.77C159.8 35.02 160.15 35.58 160.42 36.0C161.21 37.26 161.64 37.28 162.18 36.07C162.33 35.72 162.55 35.36 162.67 35.27C162.78 35.17 162.88 35.03 162.88 34.95C162.88 34.87 163.09 34.47 163.35 34.06C163.62 33.65 164.0 33.04 164.2 32.71C164.8 31.71 165.42 30.69 165.67 30.3C165.92 29.89 166.54 28.86 167.0 28.07C167.67 26.91 168.27 26.15 168.61 26.01C168.85 25.91 169.94 25.87 172.18 25.9L175.4 25.94 L175.7 26.29L176.0 26.64 L176.0 45.04C176.0 57.31 175.96 63.59 175.87 63.9C175.64 64.73 175.57 64.75 172.04 64.75L168.89 64.75 L168.54 64.45L168.19 64.15 L168.12 52.14C168.08 43.37 168.02 40.1 167.92 39.99C167.54 39.62 167.27 39.94 166.02 42.25C165.81 42.63 165.5 43.13 165.32 43.37C165.15 43.6 165.0 43.85 165.0 43.91C165.0 44.01 164.35 45.07 163.53 46.27C163.38 46.5 163.17 46.86 163.08 47.06C162.69 47.86 161.66 48.35 160.72 48.16C160.28 48.08 159.48 47.21 159.06 46.36C158.87 45.99 158.62 45.58 158.51 45.44C158.39 45.3 158.15 44.93 157.97 44.62C157.8 44.32 157.29 43.45 156.84 42.71C156.39 41.97 155.98 41.2 155.94 41.01C155.85 40.62 154.85 39.81 154.57 39.92C154.34 40.0 154.26 40.53 154.39 41.16C154.54 41.93 154.53 63.22 154.38 63.74C154.31 63.97 154.13 64.3 153.98 64.46L153.71 64.75 L150.57 64.75C148.58 64.74 147.35 64.69 147.21 64.61ZM183.09 64.59C182.56 64.21 182.72 62.83 183.6 60.12C183.74 59.68 183.93 58.98 184.01 58.56C184.09 58.15 184.32 57.28 184.52 56.64C184.72 55.99 184.96 55.06 185.06 54.57C185.16 54.09 185.35 53.35 185.5 52.94C185.64 52.52 185.87 51.65 186.01 51.0C186.15 50.35 186.38 49.51 186.51 49.15C186.64 48.78 186.87 47.94 187.01 47.27C187.15 46.61 187.4 45.67 187.56 45.19C187.72 44.71 187.92 43.98 188.0 43.56C188.08 43.15 188.33 42.19 188.56 41.44C188.79 40.68 189.02 39.81 189.07 39.5C189.12 39.2 189.31 38.46 189.5 37.88C189.69 37.29 189.94 36.36 190.05 35.81C190.17 35.26 190.4 34.42 190.56 33.94C190.72 33.46 190.92 32.73 191.0 32.31C191.08 31.9 191.31 31.06 191.51 30.44C191.7 29.82 191.95 28.86 192.06 28.31C192.17 27.77 192.37 27.08 192.5 26.79C192.9 25.88 192.94 25.87 197.49 25.88L201.49 25.88 L201.8 26.16C202.16 26.48 202.77 28.21 203.01 29.56C203.09 30.04 203.26 30.72 203.4 31.06C203.53 31.41 203.77 32.32 203.94 33.09C204.11 33.85 204.36 34.78 204.49 35.15C204.62 35.51 204.85 36.37 205.01 37.06C205.16 37.74 205.41 38.68 205.57 39.15C205.73 39.62 205.9 40.27 205.95 40.59C206.0 40.92 206.2 41.69 206.4 42.31C206.6 42.93 206.84 43.86 206.95 44.38C207.05 44.89 207.3 45.82 207.49 46.44C207.69 47.06 207.92 47.9 208.0 48.31C208.08 48.73 208.3 49.57 208.5 50.19C208.69 50.81 208.92 51.65 209.0 52.06C209.08 52.48 209.31 53.35 209.5 54.0C209.7 54.65 209.95 55.61 210.07 56.12C210.18 56.64 210.38 57.39 210.51 57.78C210.65 58.18 210.84 58.89 210.94 59.36C211.03 59.84 211.31 60.88 211.56 61.68C212.06 63.34 212.13 64.22 211.76 64.55C211.55 64.74 211.19 64.76 208.14 64.72L204.76 64.69 L204.42 64.35C204.08 64.01 203.58 62.43 203.18 60.44C203.08 59.96 202.93 59.4 202.86 59.21C202.57 58.5 202.6 58.5 197.32 58.49L192.48 58.48 L192.19 58.75C192.03 58.9 191.84 59.17 191.76 59.36C191.55 59.89 190.88 62.61 190.88 62.95C190.88 63.4 190.44 64.19 190.01 64.49L189.65 64.75 L186.47 64.75C184.13 64.75 183.24 64.71 183.09 64.59ZM219.38 64.53C219.23 64.41 219.06 64.09 219.0 63.81C218.93 63.52 218.89 55.47 218.9 44.94L218.91 26.57 L219.26 26.22L219.61 25.88 L226.61 25.87C234.0 25.87 235.75 25.97 236.74 26.4C237.06 26.54 237.63 26.78 238.02 26.94C239.37 27.48 241.39 29.21 242.31 30.62C243.05 31.76 243.75 33.5 243.95 34.69C244.16 35.97 244.18 38.84 243.99 40.16C243.63 42.63 241.83 45.38 239.69 46.75C238.15 47.74 238.02 48.02 238.61 49.17C238.82 49.59 239.0 50.01 239.0 50.1C239.0 50.18 239.17 50.63 239.39 51.1C239.6 51.56 239.86 52.22 239.96 52.56C240.07 52.91 240.29 53.46 240.46 53.8C240.63 54.13 240.91 54.84 241.09 55.36C241.27 55.88 241.48 56.42 241.57 56.56C241.65 56.7 241.79 57.04 241.88 57.31C241.96 57.59 242.25 58.33 242.52 58.95C242.78 59.58 243.0 60.16 243.0 60.24C243.0 60.33 243.19 60.8 243.43 61.29C243.66 61.78 243.98 62.6 244.14 63.09L244.42 64.0 L244.17 64.34L243.91 64.69 L240.67 64.73C237.91 64.76 237.38 64.73 237.06 64.56C236.63 64.34 236.23 63.78 236.0 63.06C235.91 62.79 235.7 62.25 235.53 61.88C235.37 61.5 235.15 60.88 235.05 60.5C234.94 60.12 234.71 59.48 234.51 59.06C234.32 58.65 234.07 57.95 233.94 57.5C233.82 57.05 233.68 56.63 233.62 56.56C233.52 56.44 233.27 55.76 232.81 54.38C232.69 54.0 232.52 53.58 232.43 53.44C232.35 53.3 232.19 52.82 232.06 52.38C231.94 51.93 231.71 51.28 231.54 50.94C231.38 50.6 231.18 50.09 231.11 49.82C230.93 49.16 230.38 48.63 229.85 48.61C227.46 48.54 227.17 48.59 226.89 49.2C226.78 49.45 226.74 51.23 226.76 56.63C226.77 64.28 226.78 64.26 226.12 64.59C225.9 64.7 224.96 64.75 222.73 64.75C219.98 64.75 219.62 64.73 219.38 64.53ZM252.08 64.61C251.48 64.26 251.5 64.87 251.5 45.09L251.5 26.54 L251.82 26.24L252.14 25.94 L255.36 25.9L258.57 25.86 L259.0 26.15C259.45 26.45 259.59 26.65 260.44 28.06C260.71 28.52 261.11 29.16 261.33 29.49C261.55 29.81 261.87 30.36 262.05 30.7C262.24 31.03 262.51 31.49 262.66 31.71C262.81 31.93 263.18 32.52 263.48 33.02C263.78 33.53 264.14 34.13 264.29 34.36C264.44 34.59 264.79 35.18 265.06 35.67C265.87 37.1 266.67 37.35 267.0 36.28C267.09 36.02 267.34 35.53 267.56 35.19C267.78 34.84 268.12 34.31 268.3 34.0C268.48 33.69 268.94 32.94 269.31 32.33C269.69 31.71 270.0 31.19 270.0 31.16C270.0 31.13 270.27 30.69 270.59 30.18C270.92 29.68 271.36 28.97 271.56 28.62C272.41 27.16 273.13 26.16 273.44 26.02C273.66 25.92 274.73 25.88 276.82 25.88C280.15 25.87 280.67 25.96 280.81 26.52C280.85 26.68 280.87 35.21 280.85 45.47L280.81 64.12 L280.53 64.4L280.24 64.69 L277.01 64.72L273.78 64.76 L273.42 64.45L273.06 64.15 L273.04 52.2C273.02 43.82 272.97 40.19 272.88 40.01C272.62 39.52 272.27 39.73 271.76 40.69C271.61 40.96 271.31 41.5 271.09 41.89C270.87 42.27 270.52 42.88 270.31 43.24C270.11 43.6 269.81 44.08 269.66 44.29C269.51 44.51 269.24 44.97 269.05 45.31C268.87 45.66 268.6 46.11 268.44 46.31C268.29 46.52 268.04 46.93 267.89 47.23C267.56 47.86 267.01 48.15 266.09 48.16C265.22 48.18 264.64 47.66 263.71 46.05C263.52 45.71 263.27 45.27 263.15 45.06C263.03 44.86 262.73 44.37 262.47 43.98C262.21 43.58 262.0 43.22 262.0 43.16C262.0 43.1 261.85 42.85 261.68 42.62C261.5 42.38 261.22 41.89 261.06 41.53C260.75 40.85 259.81 39.76 259.53 39.75C259.44 39.75 259.33 39.88 259.28 40.03C259.23 40.19 259.22 45.52 259.25 51.88C259.28 58.23 259.27 63.62 259.21 63.85C259.15 64.08 259.0 64.38 258.87 64.51L258.62 64.75 L255.47 64.75C253.46 64.74 252.23 64.69 252.08 64.61ZM287.97 64.5C287.54 64.17 287.48 63.69 287.75 62.88C287.88 62.5 288.02 61.96 288.06 61.69C288.11 61.41 288.31 60.68 288.5 60.06C288.7 59.44 288.92 58.6 289.0 58.19C289.09 57.77 289.29 57.02 289.46 56.5C289.63 55.98 289.87 55.05 290.0 54.42C290.13 53.79 290.38 52.87 290.56 52.37C290.73 51.87 290.95 51.04 291.05 50.51C291.15 49.99 291.33 49.31 291.44 49.0C291.68 48.34 291.93 47.39 292.06 46.69C292.11 46.41 292.31 45.68 292.5 45.06C292.69 44.44 292.94 43.49 293.06 42.94C293.17 42.39 293.38 41.63 293.52 41.25C293.66 40.87 293.88 40.05 294.01 39.43C294.14 38.81 294.38 37.88 294.55 37.37C294.71 36.86 294.91 36.1 295.0 35.69C295.08 35.27 295.26 34.57 295.4 34.12C295.62 33.42 295.94 32.21 296.8 28.94C296.91 28.52 297.06 27.91 297.14 27.56C297.53 25.86 297.5 25.87 302.43 25.88L306.36 25.88 L306.67 26.16C307.02 26.47 307.59 28.04 307.94 29.69C308.06 30.24 308.29 31.11 308.46 31.62C308.62 32.14 308.87 33.08 309.01 33.72C309.15 34.36 309.38 35.2 309.51 35.59C309.65 35.99 309.87 36.82 310.0 37.44C310.13 38.06 310.35 38.89 310.49 39.28C310.62 39.68 310.85 40.53 310.99 41.18C311.13 41.83 311.36 42.66 311.49 43.02C311.62 43.39 311.85 44.25 312.0 44.94C312.15 45.62 312.38 46.49 312.52 46.86C312.65 47.24 312.84 47.94 312.93 48.43C313.03 48.91 313.25 49.76 313.42 50.31C313.6 50.86 313.83 51.73 313.94 52.25C314.04 52.77 314.27 53.61 314.44 54.12C314.6 54.64 314.85 55.57 314.99 56.19C315.13 56.81 315.35 57.64 315.49 58.04C315.63 58.45 315.83 59.18 315.93 59.68C316.03 60.18 316.32 61.23 316.57 62.01C317.05 63.52 317.07 64.08 316.67 64.52L316.46 64.75 L313.1 64.75L309.73 64.75 L309.38 64.4C308.99 64.01 308.46 62.46 308.16 60.81C307.92 59.5 307.6 58.78 307.16 58.61C306.94 58.53 305.07 58.48 302.06 58.49L297.31 58.49 L297.04 58.8C296.65 59.26 296.3 60.28 296.0 61.89C295.72 63.36 295.36 64.19 294.85 64.56C294.61 64.72 294.06 64.75 291.43 64.75L288.28 64.75 L287.97 64.5ZM324.4 64.67C323.86 64.45 323.88 64.95 323.88 45.14L323.88 26.39 L324.2 26.13L324.53 25.87 L331.58 25.88C339.67 25.88 340.61 25.94 342.02 26.57C342.54 26.81 343.04 27.0 343.12 27.0C343.38 27.0 345.15 28.31 345.92 29.08C346.67 29.83 348.0 31.68 348.0 31.98C348.0 32.07 348.16 32.55 348.37 33.04C348.91 34.37 349.04 35.22 349.05 37.44C349.05 39.7 348.89 40.8 348.36 41.98C348.16 42.42 348.0 42.83 348.0 42.91C348.0 43.17 346.79 44.8 346.02 45.57C345.27 46.32 344.66 46.78 343.78 47.27C343.54 47.4 343.35 47.64 343.25 47.93L343.1 48.39 L343.44 49.04C343.62 49.4 343.88 50.04 344.02 50.47C344.15 50.9 344.37 51.44 344.5 51.66C344.62 51.88 344.81 52.35 344.91 52.7C345.02 53.05 345.25 53.63 345.43 53.99C345.61 54.35 345.88 55.02 346.02 55.48C346.16 55.94 346.33 56.37 346.39 56.45C346.45 56.53 346.72 57.19 347.0 57.94C347.28 58.68 347.56 59.36 347.63 59.44C347.7 59.52 347.84 59.9 347.95 60.27C348.06 60.63 348.31 61.27 348.5 61.69C349.29 63.4 349.41 64.34 348.88 64.62C348.74 64.7 347.38 64.75 345.5 64.75C342.16 64.75 341.67 64.68 341.38 64.14C341.06 63.54 340.21 61.38 339.98 60.56C339.84 60.08 339.67 59.62 339.6 59.53C339.48 59.39 339.26 58.77 338.05 55.33C337.81 54.66 337.51 53.9 337.39 53.64C337.26 53.39 337.09 52.88 337.0 52.5C336.91 52.12 336.71 51.56 336.56 51.24C336.4 50.93 336.18 50.36 336.07 49.98C335.72 48.78 335.24 48.53 333.38 48.57L332.32 48.6 L331.97 48.99L331.61 49.39 L331.63 56.54C331.64 61.13 331.6 63.81 331.52 64.02C331.25 64.72 331.11 64.75 327.69 64.74C325.97 64.73 324.49 64.7 324.4 64.67ZM355.22 64.53C355.12 64.41 354.99 64.18 354.94 64.02C354.84 63.7 355.14 62.2 355.51 61.15C355.64 60.79 355.86 59.97 356.0 59.34C356.14 58.71 356.39 57.77 356.56 57.25C356.73 56.73 356.96 55.9 357.06 55.39C357.17 54.88 357.42 53.92 357.62 53.26C357.82 52.6 358.05 51.73 358.13 51.33C358.21 50.92 358.38 50.28 358.52 49.89C358.65 49.5 358.87 48.67 359.01 48.03C359.15 47.39 359.38 46.55 359.51 46.16C359.65 45.76 359.87 44.93 360.01 44.31C360.15 43.69 360.39 42.77 360.56 42.25C360.72 41.73 360.92 41.0 361.0 40.62C361.08 40.25 361.34 39.29 361.56 38.5C361.79 37.71 362.01 36.84 362.06 36.56C362.11 36.29 362.31 35.56 362.5 34.94C362.69 34.32 362.94 33.36 363.06 32.81C363.17 32.26 363.38 31.5 363.52 31.13C363.65 30.75 363.88 29.91 364.01 29.25C364.32 27.72 364.71 26.65 365.11 26.22L365.42 25.88 L369.51 25.87L373.59 25.87 L373.93 26.14C374.38 26.5 374.7 27.25 375.0 28.73C375.13 29.39 375.36 30.28 375.5 30.69C375.65 31.1 375.87 31.94 376.0 32.56C376.13 33.18 376.35 34.01 376.49 34.41C376.62 34.8 376.85 35.65 376.99 36.3C377.13 36.95 377.36 37.78 377.49 38.15C377.63 38.51 377.82 39.26 377.93 39.81C378.04 40.36 378.27 41.23 378.44 41.75C378.61 42.27 378.83 43.11 378.94 43.62C379.04 44.14 379.27 44.98 379.45 45.49C379.62 46.0 379.84 46.85 379.95 47.38C380.05 47.91 380.26 48.74 380.43 49.23C380.6 49.71 380.82 50.58 380.94 51.15C381.05 51.72 381.25 52.49 381.39 52.85C381.52 53.22 381.74 54.04 381.88 54.67C382.02 55.3 382.3 56.32 382.5 56.94C382.7 57.56 382.9 58.29 382.95 58.56C383.05 59.2 383.34 60.34 383.43 60.49C383.55 60.69 384.25 63.52 384.25 63.81C384.25 63.97 384.13 64.24 383.99 64.42L383.73 64.75 L380.54 64.75C376.36 64.75 376.36 64.75 375.89 62.54C375.66 61.48 375.39 60.43 375.1 59.5C375.03 59.26 374.85 58.94 374.71 58.78L374.46 58.5 L369.49 58.5L364.52 58.5 L364.26 58.83C364.12 59.01 363.94 59.39 363.87 59.67C363.79 59.96 363.63 60.55 363.5 61.0C363.37 61.45 363.18 62.21 363.09 62.69C362.67 64.74 362.65 64.75 358.59 64.75L355.41 64.75 L355.22 64.53ZM441.28 64.67C440.73 64.45 440.75 64.96 440.74 45.24C440.74 24.93 440.7 26.11 441.41 25.93C441.57 25.89 443.08 25.88 444.77 25.9L447.86 25.94 L448.18 26.24L448.5 26.54 L448.5 45.07C448.5 57.95 448.46 63.7 448.37 63.97C448.1 64.72 447.96 64.75 444.54 64.74C442.83 64.73 441.37 64.7 441.28 64.67ZM457.33 64.52C457.21 64.39 457.06 64.09 457.0 63.86C456.92 63.6 456.88 56.54 456.88 45.02L456.88 26.61 L457.24 26.24L457.61 25.88 L468.56 25.88C480.32 25.87 480.03 25.86 480.37 26.49C480.57 26.87 480.54 31.41 480.33 31.91C480.01 32.69 480.42 32.65 472.62 32.63L465.49 32.61 L465.11 32.99L464.73 33.37 L464.77 37.38L464.81 41.4 L465.11 41.64L465.41 41.88 L469.79 41.87L474.16 41.85 L474.49 42.1L474.81 42.34 L474.85 45.03L474.88 47.73 L474.58 48.08L474.27 48.44 L469.89 48.45C467.48 48.46 465.42 48.5 465.31 48.54C464.77 48.75 464.74 49.11 464.75 56.63C464.77 64.28 464.77 64.26 464.12 64.59C463.9 64.7 462.95 64.75 460.68 64.75L457.54 64.75 L457.33 64.52ZM485.38 64.53C484.97 64.2 484.99 63.23 485.43 62.04C485.61 61.55 485.89 60.54 486.06 59.79C486.22 59.05 486.45 58.18 486.56 57.88C486.67 57.57 486.88 56.78 487.01 56.12C487.15 55.47 487.38 54.63 487.52 54.25C487.66 53.87 487.88 53.05 488.01 52.43C488.14 51.81 488.38 50.88 488.55 50.37C488.72 49.86 488.94 49.0 489.05 48.47C489.16 47.94 489.36 47.21 489.49 46.85C489.62 46.48 489.82 45.77 489.94 45.25C490.05 44.73 490.3 43.78 490.5 43.12C490.69 42.47 490.91 41.63 490.99 41.25C491.06 40.87 491.29 40.0 491.5 39.31C491.71 38.62 492.01 37.5 492.19 36.81C492.36 36.12 492.76 34.61 493.07 33.44C493.39 32.27 493.8 30.67 494.0 29.88C494.53 27.7 494.96 26.48 495.33 26.15L495.65 25.87 L499.75 25.9L503.86 25.94 L504.21 26.2C504.5 26.41 504.61 26.66 504.85 27.64C505.0 28.28 505.27 29.26 505.44 29.81C505.61 30.36 505.83 31.21 505.93 31.69C506.03 32.17 506.26 33.01 506.44 33.56C506.62 34.11 506.82 34.87 506.89 35.25C506.96 35.63 507.2 36.56 507.43 37.31C507.67 38.07 507.92 39.02 508.0 39.44C508.08 39.85 508.28 40.58 508.44 41.06C508.6 41.54 508.85 42.48 508.99 43.15C509.13 43.81 509.36 44.66 509.49 45.02C509.63 45.39 509.82 46.11 509.93 46.62C510.19 47.89 510.31 48.34 510.56 49.0C510.67 49.31 510.88 50.1 511.01 50.75C511.15 51.4 511.37 52.25 511.51 52.62C511.65 53.0 511.87 53.81 512.0 54.43C512.13 55.05 512.35 55.89 512.49 56.28C512.62 56.68 512.85 57.53 512.99 58.18C513.13 58.83 513.36 59.66 513.5 60.04C513.64 60.41 513.84 61.13 513.93 61.64C514.03 62.15 514.2 62.81 514.31 63.12C514.53 63.75 514.4 64.41 514.0 64.63C513.86 64.7 512.44 64.75 510.56 64.75L507.35 64.75 L506.99 64.49C506.48 64.13 506.25 63.62 505.99 62.31C505.7 60.8 505.28 59.46 504.95 58.97L504.68 58.56 L499.77 58.53C496.55 58.51 494.78 58.54 494.62 58.63C494.27 58.81 494.02 59.36 493.81 60.4C493.36 62.65 492.9 64.08 492.5 64.44L492.22 64.69 L488.95 64.72L485.67 64.76 L485.38 64.53ZM200.75 52.19C201.13 51.95 201.13 51.49 200.74 50.08C200.53 49.32 200.22 48.01 200.05 47.19C199.88 46.36 199.64 45.35 199.5 44.94C199.37 44.52 199.17 43.68 199.06 43.06C198.95 42.44 198.72 41.48 198.55 40.91C198.38 40.35 198.17 39.3 198.07 38.6C197.85 36.96 197.72 36.59 197.35 36.65C196.98 36.7 196.5 38.1 196.06 40.41C195.89 41.32 195.61 42.51 195.44 43.06C195.27 43.61 195.05 44.58 194.94 45.22C194.83 45.85 194.64 46.72 194.51 47.15C194.37 47.59 194.18 48.42 194.07 49.0C193.95 49.58 193.78 50.32 193.68 50.64C193.37 51.65 193.52 52.15 194.18 52.27C194.62 52.35 200.6 52.28 200.75 52.19ZM305.77 52.01C306.04 51.67 306.06 51.29 305.83 50.66C305.54 49.89 305.15 48.38 305.01 47.47C304.93 47.01 304.76 46.28 304.64 45.85C304.34 44.86 304.19 44.21 303.93 42.88C303.81 42.29 303.61 41.49 303.48 41.08C303.35 40.68 303.16 39.76 303.05 39.02C302.75 36.86 302.61 36.51 302.11 36.76C301.76 36.94 301.39 38.03 301.05 39.89C300.87 40.87 300.62 42.01 300.49 42.42C300.36 42.83 300.11 43.9 299.95 44.8C299.78 45.7 299.55 46.68 299.45 46.98C299.34 47.28 299.13 48.18 298.98 48.98C298.84 49.78 298.64 50.59 298.55 50.78C298.17 51.51 298.43 52.18 299.12 52.27C299.3 52.29 300.81 52.31 302.49 52.3L305.54 52.29 L305.77 52.01ZM373.03 52.0C373.18 51.81 373.25 51.58 373.21 51.38C373.04 50.43 372.69 48.94 372.44 48.06C372.28 47.51 372.06 46.56 371.94 45.94C371.83 45.32 371.65 44.56 371.55 44.25C371.44 43.94 371.22 43.01 371.05 42.19C370.88 41.36 370.64 40.35 370.5 39.94C370.37 39.52 370.2 38.76 370.13 38.24C369.98 37.1 369.83 36.65 369.55 36.54C369.23 36.42 369.06 36.76 368.82 37.97C368.7 38.57 368.5 39.43 368.38 39.88C368.25 40.32 368.05 41.19 367.94 41.81C367.83 42.43 367.62 43.3 367.49 43.75C367.35 44.2 367.1 45.27 366.94 46.12C366.78 46.98 366.58 47.86 366.5 48.06C366.34 48.46 365.91 50.46 365.79 51.32C365.73 51.76 365.77 51.87 366.03 52.07L366.33 52.31 L369.56 52.31L372.78 52.3 L373.03 52.0ZM503.07 52.12C503.45 51.8 503.51 51.54 503.32 50.98C503.22 50.68 503.08 50.07 503.0 49.62C502.92 49.18 502.73 48.36 502.56 47.81C502.39 47.26 502.15 46.22 502.01 45.5C501.87 44.78 501.62 43.74 501.45 43.19C501.29 42.64 501.04 41.62 500.9 40.94C500.64 39.66 500.35 38.45 500.04 37.29C499.69 36.0 499.19 36.33 498.92 38.01C498.82 38.66 498.63 39.58 498.5 40.06C498.37 40.54 498.15 41.53 498.0 42.25C497.86 42.97 497.61 44.04 497.45 44.62C497.28 45.21 497.08 46.08 497.0 46.56C496.91 47.04 496.63 48.29 496.36 49.34C495.79 51.57 495.78 51.78 496.16 52.08L496.45 52.31 L499.66 52.3C502.1 52.29 502.92 52.24 503.07 52.12ZM233.53 42.22C234.33 41.9 234.59 41.73 235.1 41.14C235.88 40.25 235.96 40.08 236.19 39.0C236.48 37.6 236.39 36.36 235.88 35.06C235.71 34.62 234.58 33.43 234.09 33.17C233.4 32.81 231.91 32.62 229.67 32.62L227.48 32.62 L227.12 32.99L226.75 33.36 L226.75 37.4C226.75 39.79 226.8 41.63 226.88 41.9C227.1 42.68 227.18 42.7 230.02 42.65L232.56 42.6 L233.53 42.22ZM338.42 42.21C339.3 41.87 339.47 41.74 340.12 40.97C341.04 39.89 341.19 39.38 341.18 37.44C341.18 35.64 341.0 35.13 339.98 34.04C338.86 32.85 337.73 32.58 334.27 32.65L332.23 32.69 L331.92 33.04L331.61 33.4 L331.63 37.42C331.64 39.63 331.7 41.65 331.76 41.9C331.96 42.69 332.06 42.71 334.9 42.65L337.44 42.6 L338.42 42.21ZM443.31 22.44C442.18 22.02 441.6 21.63 441.06 20.9C439.56 18.86 439.91 16.35 441.93 14.73C442.77 14.04 443.24 13.93 444.9 13.96C446.21 13.99 446.66 14.17 447.55 15.05C448.56 16.06 448.88 16.81 448.88 18.26C448.88 19.29 448.83 19.54 448.55 20.11C448.03 21.15 447.21 21.9 446.14 22.31C444.86 22.8 444.36 22.82 443.31 22.44Z"/>
+      <path class="w2" fill-rule="evenodd" d="M151.16 98.94C150.58 98.85 149.95 98.66 149.72 98.52C149.5 98.38 149.1 98.14 148.85 98.0C148.59 97.86 148.28 97.59 148.17 97.4C148.05 97.22 147.8 96.89 147.62 96.69C147.39 96.44 147.19 95.94 146.99 95.19L146.7 94.06 L146.65 90.12L146.61 86.19 L146.87 84.88C147.08 83.81 147.21 83.45 147.59 82.89C148.15 82.07 149.23 81.2 149.99 80.94C150.6 80.73 151.0 80.43 151.0 80.17C151.0 80.04 151.32 80.0 152.47 80.0L153.94 80.0 L154.06 80.27C154.13 80.42 154.62 80.76 155.18 81.05C156.72 81.84 157.62 82.85 158.04 84.22C158.27 84.97 158.3 85.49 158.34 89.12C158.39 93.14 158.36 93.6 157.94 95.49C157.77 96.28 157.65 96.51 157.12 97.1C156.56 97.73 156.25 97.97 155.19 98.57C154.86 98.76 152.85 99.14 152.38 99.11C152.27 99.1 151.72 99.02 151.16 98.94ZM175.7 98.81L175.31 98.69 L175.31 97.31L175.31 95.94 L175.74 95.25C175.98 94.87 176.35 94.27 176.58 93.91C176.81 93.55 177.0 93.21 177.0 93.15C177.0 93.09 177.25 92.65 177.56 92.18C177.87 91.71 178.16 91.21 178.2 91.07C178.25 90.93 178.46 90.56 178.67 90.24C178.89 89.92 179.22 89.38 179.41 89.05C179.6 88.71 180.06 87.93 180.43 87.31C180.8 86.69 181.11 86.12 181.12 86.05C181.12 85.97 181.3 85.69 181.52 85.42C181.94 84.89 182.38 83.99 182.38 83.62C182.38 83.34 182.0 83.11 181.53 83.11C181.34 83.11 179.99 83.12 178.53 83.13C176.28 83.15 175.83 83.12 175.57 82.95C174.94 82.54 175.05 81.3 175.77 80.69C175.97 80.52 176.2 80.38 176.26 80.38C176.32 80.38 176.38 80.29 176.38 80.19C176.38 80.05 176.53 80.0 177.01 80.0C177.38 80.0 177.61 80.05 177.56 80.12C177.43 80.35 178.05 80.38 181.5 80.35C184.17 80.32 184.93 80.28 184.91 80.16C184.89 80.07 184.96 80.0 185.06 80.0C185.17 80.0 185.24 80.04 185.22 80.09C185.2 80.15 185.36 80.41 185.56 80.68C186.19 81.5 186.14 83.66 185.48 84.37C185.34 84.52 185.13 84.87 185.0 85.16C184.87 85.45 184.56 85.97 184.32 86.31C184.08 86.66 183.87 86.99 183.87 87.06C183.87 87.13 183.65 87.53 183.38 87.94C183.1 88.35 182.88 88.75 182.88 88.82C182.88 88.9 182.71 89.19 182.51 89.47C182.31 89.75 181.95 90.32 181.73 90.75C181.5 91.17 181.19 91.75 181.03 92.04C180.87 92.33 180.55 92.85 180.31 93.2C180.07 93.55 179.88 93.92 179.88 94.04C179.88 94.16 179.68 94.47 179.44 94.73C178.99 95.23 178.88 95.7 179.15 95.97C179.26 96.08 180.15 96.12 182.38 96.12L185.46 96.12 L185.73 96.41C186.22 96.94 186.06 98.85 185.52 98.88C184.1 98.96 175.98 98.9 175.7 98.81ZM204.0 98.79C203.81 98.71 203.62 98.6 203.58 98.53C203.54 98.47 203.5 94.58 203.5 89.89L203.48 81.36 L203.93 80.87C204.17 80.6 204.38 80.29 204.38 80.19C204.38 79.92 205.44 79.92 205.55 80.19C205.65 80.46 208.89 80.46 209.17 80.19C209.37 79.99 210.19 79.92 210.07 80.12C210.03 80.18 210.2 80.28 210.45 80.32C211.03 80.43 212.55 80.29 212.6 80.13C212.67 79.91 213.5 79.97 213.5 80.19C213.5 80.29 213.67 80.61 213.88 80.89C214.27 81.44 214.37 82.16 214.12 82.63C213.84 83.16 213.48 83.21 210.3 83.17C207.89 83.14 207.24 83.17 207.05 83.31C206.84 83.46 206.8 83.72 206.73 85.46C206.69 86.63 206.71 87.53 206.78 87.67C207.0 88.1 207.56 88.22 209.11 88.15C211.33 88.06 211.75 88.35 211.75 89.96C211.75 90.38 211.68 90.53 211.42 90.74L211.09 91.0 L209.18 91.0C207.53 91.0 207.24 91.03 207.0 91.23L206.71 91.46 L206.72 93.55C206.72 95.33 206.75 95.68 206.93 95.86C207.11 96.04 207.55 96.07 210.41 96.09L213.69 96.12 L213.97 96.44C214.51 97.06 214.28 98.84 213.66 98.88C212.37 98.98 204.26 98.9 204.0 98.79ZM232.27 98.86C231.73 98.66 231.74 98.79 231.74 89.88L231.73 81.37 L232.12 80.88C232.33 80.62 232.5 80.31 232.5 80.2C232.5 80.04 232.64 80.0 233.21 80.0C233.6 80.0 233.88 80.04 233.84 80.08C233.79 80.13 233.98 80.41 234.25 80.7C234.53 81.0 234.75 81.34 234.75 81.47C234.76 81.59 234.76 84.79 234.75 88.57L234.74 95.45 L235.01 95.8L235.28 96.14 L238.49 96.11C241.92 96.09 242.09 96.11 242.37 96.72C242.62 97.28 242.53 98.23 242.19 98.57C242.02 98.74 241.81 98.88 241.72 98.88C240.15 98.93 232.43 98.92 232.27 98.86ZM282.05 98.82C281.84 98.73 281.63 98.56 281.59 98.45C281.54 98.34 281.5 94.45 281.49 89.79L281.48 81.33 L281.99 80.84C282.27 80.57 282.5 80.28 282.5 80.18C282.5 80.05 282.67 80.0 283.12 80.0C283.56 80.0 283.75 80.05 283.75 80.17C283.75 80.26 283.9 80.47 284.08 80.63C284.7 81.21 284.74 81.47 284.69 84.64C284.63 87.77 284.65 87.88 285.26 88.1C285.43 88.16 286.45 88.17 287.53 88.13L289.49 88.06 L289.68 87.81C289.83 87.61 289.86 87.02 289.85 84.46L289.84 81.36 L290.23 80.82C290.45 80.52 290.62 80.21 290.62 80.14C290.62 80.05 290.92 80.0 291.37 80.0C291.79 80.0 292.11 80.04 292.09 80.09C292.08 80.15 292.23 80.41 292.44 80.68L292.81 81.17 L292.85 89.75L292.88 98.34 L292.65 98.63C292.3 99.06 290.71 99.14 290.22 98.75L289.88 98.48 L289.88 95.05L289.88 91.61 L289.57 91.31L289.26 91.0 L287.21 91.0L285.16 91.0 L284.94 91.25L284.71 91.5 L284.68 94.94C284.66 97.44 284.61 98.42 284.5 98.56C284.16 98.98 282.75 99.13 282.05 98.82ZM310.42 98.87C309.87 98.66 309.89 98.09 310.5 96.26C310.7 95.67 310.95 94.71 311.07 94.12C311.18 93.54 311.43 92.61 311.62 92.05C311.81 91.5 312.01 90.8 312.06 90.49C312.18 89.78 312.43 88.83 312.68 88.12C312.8 87.82 312.98 87.14 313.08 86.62C313.18 86.11 313.38 85.38 313.52 85.0C313.66 84.62 313.9 83.71 314.06 82.97L314.35 81.63 L314.92 80.99C315.24 80.64 315.5 80.27 315.5 80.17C315.5 80.06 315.65 80.0 315.94 80.0C316.25 80.0 316.38 80.06 316.38 80.2C316.38 80.31 316.45 80.37 316.53 80.34C316.62 80.31 316.67 80.22 316.66 80.14C316.64 80.06 316.8 80.0 317.06 80.0C317.35 80.0 317.5 80.06 317.5 80.17C317.5 80.27 317.76 80.57 318.08 80.84L318.65 81.32 L318.83 82.33C318.92 82.89 319.12 83.67 319.26 84.08C319.41 84.48 319.65 85.4 319.81 86.12C319.97 86.85 320.22 87.71 320.37 88.05C320.51 88.38 320.71 89.14 320.82 89.73C320.92 90.32 321.14 91.2 321.31 91.68C321.47 92.17 321.75 93.15 321.92 93.88C322.09 94.6 322.4 95.77 322.61 96.49C323.28 98.74 323.14 99.04 321.46 98.96C320.35 98.9 320.07 98.73 319.87 97.98C319.67 97.22 319.26 96.34 318.97 96.03L318.71 95.75 L316.5 95.75L314.28 95.75 L313.97 96.07C313.65 96.38 313.34 97.11 313.11 98.1C313.03 98.41 312.86 98.71 312.71 98.81C312.41 99.0 310.87 99.04 310.42 98.87ZM343.41 98.87C342.59 98.75 341.23 97.86 340.59 97.02C339.9 96.12 339.35 94.3 339.56 93.63C339.66 93.32 340.25 93.12 341.09 93.12C342.06 93.12 342.58 93.38 342.68 93.89C342.97 95.43 343.25 95.82 344.3 96.17C345.87 96.69 347.13 96.23 347.77 94.91C348.14 94.14 348.03 93.66 347.29 92.8C346.71 92.13 346.31 91.85 344.69 90.99C344.27 90.78 343.77 90.48 343.56 90.33C343.36 90.18 343.03 89.98 342.83 89.9C342.24 89.64 341.07 88.66 340.64 88.06C340.15 87.38 339.62 85.89 339.62 85.2C339.62 84.92 339.77 84.24 339.96 83.69C340.24 82.84 340.4 82.57 341.03 81.92C341.49 81.45 341.95 81.1 342.23 81.02C342.87 80.82 343.5 80.41 343.5 80.19C343.5 80.03 343.75 80.0 345.06 80.0C346.33 80.0 346.62 80.03 346.62 80.18C346.62 80.45 347.22 80.86 347.73 80.95C348.65 81.11 349.66 81.98 350.32 83.19L350.8 84.06 L350.81 85.04L350.81 86.02 L350.52 86.26C350.29 86.44 350.02 86.5 349.37 86.5L348.52 86.5 L348.26 86.17C348.11 85.99 347.9 85.55 347.78 85.2C347.49 84.37 346.5 83.33 345.81 83.14C344.74 82.85 344.28 82.98 343.36 83.86L342.71 84.49 L342.8 85.2C342.91 86.12 343.2 86.74 343.66 86.99C343.87 87.1 344.18 87.31 344.37 87.46C344.55 87.61 345.04 87.91 345.45 88.14C345.85 88.36 346.32 88.64 346.49 88.77C346.65 88.9 346.85 89.0 346.94 89.0C347.17 89.0 349.13 90.28 349.58 90.73C350.14 91.29 350.73 92.22 350.89 92.8C351.09 93.56 350.84 95.82 350.51 96.24C350.37 96.42 350.16 96.73 350.05 96.94C349.78 97.43 349.37 97.88 349.18 97.88C349.09 97.88 348.79 98.07 348.5 98.31C348.22 98.55 347.78 98.8 347.52 98.87C347.0 99.02 344.4 99.02 343.41 98.87ZM372.23 98.76L371.94 98.52 L371.93 91.12L371.93 83.72 L371.56 83.41L371.2 83.09 L369.86 83.16C368.28 83.24 367.78 83.07 367.55 82.37C367.36 81.8 367.52 81.31 368.06 80.75C368.3 80.5 368.5 80.23 368.5 80.15C368.5 80.05 368.73 80.0 369.16 80.0C369.57 80.0 369.75 80.04 369.64 80.11C369.31 80.32 370.46 80.4 373.94 80.38C376.87 80.37 377.46 80.34 377.58 80.19C377.78 79.91 378.62 79.94 378.62 80.21C378.62 80.33 378.82 80.63 379.07 80.88C379.61 81.44 379.76 82.09 379.44 82.57C379.09 83.11 378.59 83.24 377.16 83.16C375.82 83.09 375.24 83.21 375.04 83.61C374.98 83.72 374.91 87.16 374.88 91.25L374.81 98.68 L374.5 98.84C373.99 99.09 372.58 99.05 372.23 98.76ZM396.28 98.82C395.95 98.67 395.88 98.57 395.88 98.26C395.88 97.78 396.43 95.42 396.68 94.82C396.78 94.58 396.98 93.83 397.12 93.16C397.26 92.49 397.49 91.63 397.63 91.26C397.77 90.89 398.0 90.07 398.13 89.43C398.26 88.8 398.5 87.89 398.66 87.42C398.83 86.95 399.03 86.17 399.12 85.69C399.2 85.21 399.41 84.44 399.57 83.99C399.74 83.54 399.95 82.81 400.05 82.36C400.26 81.34 400.38 81.12 400.93 80.7C401.18 80.51 401.38 80.28 401.38 80.18C401.38 79.9 402.32 79.93 402.43 80.22L402.52 80.44 L402.68 80.22C402.86 79.98 403.38 79.92 403.38 80.14C403.38 80.22 403.6 80.55 403.88 80.88C404.42 81.53 404.66 82.1 404.81 83.06C404.86 83.4 405.09 84.3 405.33 85.06C405.57 85.82 405.82 86.72 405.88 87.06C405.95 87.41 406.15 88.17 406.33 88.75C406.51 89.33 406.79 90.38 406.95 91.06C407.1 91.75 407.34 92.62 407.48 93.0C407.61 93.38 407.79 94.05 407.87 94.5C407.96 94.95 408.21 95.88 408.45 96.56C409.15 98.64 408.98 99.0 407.27 99.0C406.18 99.0 405.83 98.73 405.49 97.6C405.07 96.2 404.98 96.0 404.76 95.88C404.59 95.79 401.76 95.7 400.41 95.74C399.81 95.76 399.28 96.44 399.06 97.48C398.78 98.75 398.6 98.92 397.53 98.97C396.98 98.99 396.54 98.94 396.28 98.82ZM426.34 98.75L426.0 98.48 L426.0 89.88L426.0 81.27 L426.43 80.71C426.66 80.4 426.82 80.11 426.78 80.07C426.74 80.03 427.08 80.0 427.54 80.0C428.05 80.0 428.38 80.05 428.38 80.13C428.38 80.21 428.68 80.59 429.05 80.98C429.41 81.37 429.78 81.89 429.86 82.14C429.94 82.38 430.17 82.84 430.36 83.14C430.55 83.45 430.81 83.99 430.93 84.34C431.04 84.7 431.25 85.12 431.38 85.28C431.5 85.45 431.72 85.88 431.86 86.25C432.0 86.61 432.25 87.11 432.41 87.36C432.57 87.61 432.77 88.04 432.85 88.31C432.93 88.59 433.12 89.01 433.28 89.25C433.43 89.49 433.71 90.08 433.89 90.56C434.17 91.3 434.27 91.44 434.54 91.48C435.06 91.54 435.1 91.09 435.03 86.11C434.96 81.21 434.96 81.16 435.61 80.57C435.76 80.44 435.88 80.26 435.88 80.17C435.88 80.05 436.06 80.0 436.53 80.0L437.19 80.0 L437.43 80.41C437.57 80.63 437.75 80.94 437.84 81.09C437.97 81.31 438.01 83.12 438.0 89.87C438.0 94.54 437.97 98.44 437.93 98.54C437.81 98.84 437.28 99.0 436.39 99.0C435.01 99.0 434.84 98.82 433.56 96.06C433.24 95.38 432.56 93.99 432.05 92.97C431.54 91.96 431.12 91.06 431.12 90.97C431.12 90.87 430.9 90.42 430.62 89.97C430.35 89.51 430.12 89.08 430.12 89.01C430.12 88.73 429.59 87.75 429.44 87.75C428.99 87.75 428.94 88.42 428.98 93.5L429.03 98.44 L428.75 98.69C428.32 99.08 426.81 99.12 426.34 98.75ZM456.98 98.9C456.8 98.88 456.56 98.76 456.44 98.63L456.24 98.4 L456.25 89.88C456.25 80.65 456.24 80.87 456.93 80.51C457.1 80.41 457.25 80.26 457.25 80.17C457.25 80.05 457.43 80.0 457.81 80.0C458.2 80.0 458.37 80.05 458.34 80.16C458.32 80.28 459.0 80.32 461.38 80.34C464.49 80.37 465.07 80.34 464.94 80.12C464.89 80.05 465.0 80.0 465.18 80.0C465.36 80.0 465.5 80.06 465.5 80.12C465.5 80.19 465.63 80.25 465.8 80.25C466.19 80.25 466.84 80.99 466.94 81.55C467.05 82.12 466.92 82.67 466.61 82.95L466.35 83.18 L463.33 83.15C461.46 83.14 460.16 83.18 459.91 83.26C459.36 83.44 459.26 83.89 459.28 85.98L459.29 87.64 L459.6 87.88C459.87 88.1 460.12 88.12 461.76 88.12L463.61 88.12 L463.96 88.42C464.26 88.68 464.31 88.83 464.35 89.58C464.43 90.89 464.36 90.92 461.79 91.0L459.73 91.06 L459.49 91.36C459.13 91.8 459.13 95.32 459.49 95.77L459.73 96.06 L463.1 96.1C466.92 96.14 466.81 96.11 466.95 97.16C467.06 97.93 466.92 98.59 466.62 98.75C466.4 98.87 457.86 99.0 456.98 98.9ZM487.57 98.85C486.78 98.7 485.49 97.85 484.76 96.99C484.2 96.34 483.75 95.04 483.75 94.09C483.75 93.45 484.24 93.12 485.18 93.12C486.16 93.12 486.61 93.31 486.7 93.74C486.74 93.92 486.85 94.33 486.96 94.65C487.6 96.7 491.01 97.0 491.88 95.09C492.57 93.57 491.66 92.29 489.0 91.05C488.76 90.94 488.28 90.66 487.94 90.44C487.59 90.21 487.17 89.99 487.0 89.93C486.58 89.81 485.35 88.71 484.73 87.91C484.31 87.37 484.2 87.1 484.06 86.25C483.62 83.75 484.48 81.95 486.59 80.98C487.38 80.61 487.62 80.44 487.62 80.25L487.62 80.0 L489.12 80.0C490.45 80.0 490.62 80.02 490.68 80.23C490.75 80.45 491.57 80.89 492.25 81.07C492.87 81.24 493.78 82.04 494.34 82.92C495.03 83.99 495.17 84.86 494.81 85.8C494.56 86.46 494.4 86.53 493.31 86.48L492.57 86.44 L492.3 86.03C492.14 85.8 491.98 85.38 491.93 85.1C491.75 84.02 490.72 83.16 489.47 83.04L488.69 82.97 L488.07 83.39C486.92 84.16 486.58 85.14 487.11 86.13C487.35 86.58 488.79 87.69 489.69 88.11C489.96 88.24 490.36 88.5 490.56 88.67C490.77 88.85 491.0 89.0 491.07 89.0C491.15 89.0 491.6 89.25 492.07 89.56C492.55 89.87 493.0 90.12 493.08 90.12C493.29 90.13 494.59 91.63 494.75 92.07C495.16 93.14 495.26 94.11 495.05 95.1C494.94 95.63 494.79 96.17 494.71 96.32C494.36 96.94 493.65 97.75 493.19 98.05C492.91 98.22 492.57 98.45 492.43 98.56C491.91 98.95 488.99 99.12 487.57 98.85ZM513.38 98.92C513.27 98.88 513.06 98.73 512.91 98.59L512.62 98.33 L512.62 89.88L512.62 81.42 L513.06 80.91C513.3 80.63 513.5 80.31 513.5 80.2C513.5 80.04 513.64 80.0 514.19 80.0C514.61 80.0 514.88 80.05 514.88 80.14C514.88 80.22 515.07 80.5 515.31 80.77L515.75 81.25 L515.75 89.86L515.75 98.46 L515.5 98.68C515.25 98.91 513.77 99.08 513.38 98.92ZM154.11 95.82C155.16 95.05 155.16 95.05 155.22 90.44C155.28 85.95 155.19 84.83 154.71 84.21C154.18 83.51 153.48 83.11 152.64 83.03C151.76 82.95 151.36 83.15 150.47 84.11L149.9 84.71 L149.82 85.51C149.69 86.89 149.82 94.27 149.99 94.69C150.17 95.13 150.78 95.8 151.31 96.15C151.61 96.34 151.87 96.38 152.57 96.35L153.45 96.31 L154.11 95.82ZM318.34 92.93C318.53 92.66 318.55 92.32 318.37 92.0C318.3 91.87 318.16 91.29 318.06 90.72C317.96 90.15 317.77 89.41 317.64 89.06C317.51 88.72 317.31 87.88 317.19 87.19C316.96 85.9 316.75 85.38 316.44 85.38C316.18 85.38 316.12 85.52 315.81 87.1C315.65 87.91 315.4 88.92 315.26 89.37C315.11 89.81 314.96 90.4 314.92 90.68C314.88 90.96 314.77 91.47 314.67 91.82C314.34 93.0 314.71 93.23 316.79 93.18C317.95 93.16 318.2 93.11 318.34 92.93ZM403.99 92.94C404.13 92.82 404.25 92.58 404.25 92.43C404.25 92.02 403.92 90.67 403.64 89.94C403.51 89.59 403.31 88.69 403.2 87.94C402.87 85.72 402.64 85.18 402.19 85.64C401.98 85.85 401.31 88.12 400.94 89.88C400.79 90.6 400.57 91.46 400.44 91.78C400.18 92.47 400.26 92.96 400.66 93.12C400.81 93.19 401.57 93.22 402.34 93.21C403.5 93.18 403.78 93.13 403.99 92.94Z"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="sky" id="sky"></div>
+<canvas id="gl" aria-hidden="true"></canvas>
+<div class="beam" id="beam"></div>
+
+<header class="nav" id="nav">
+  <a class="brand" href="#hero" aria-label="Marmara Şifa Özel Hastanesi, başa dön">
+    <svg class="b-icon" aria-hidden="true" focusable="false"><use href="#lg-icon"/></svg>
+    <svg class="b-word" aria-hidden="true" focusable="false"><use href="#lg-word"/></svg>
+  </a>
+  <nav class="links" aria-label="Ana menü">
+    <a href="#rakamlar">Rakamlar</a>
+    <a href="#birimler">Birimler</a>
+    <a href="#kat">Kat rehberi</a>
+    <a href="#branslar">Branşlar</a>
+    <a href="#randevu">Randevu</a>
+    <a href="#iletisim">İletişim</a>
+  </nav>
+  <a class="emg" href="#iletisim" aria-label="Acil servis 7/24, iletişim bilgileri"><span>Acil servis</span><b>7/24</b></a>
+  <button class="menu-btn" id="menuBtn" type="button" aria-expanded="false" aria-controls="menu">Menü</button>
+</header>
+<div class="menu" id="menu" hidden>
+  <nav aria-label="Tüm bölümler">
+    <a href="#rakamlar">Rakamlarla</a>
+    <a href="#degerler">Değerlerimiz</a>
+    <a href="#altyapi">Altyapı</a>
+    <a href="#birimler">Acil ve ameliyathane</a>
+    <a href="#tani">Tanı birimleri</a>
+    <a href="#kat">Kat rehberi</a>
+    <a href="#branslar">Branşlar</a>
+    <a href="#randevu">Randevu</a>
+    <a href="#haklar">Haklarınız</a>
+    <a href="#iletisim">İletişim</a>
+  </nav>
+</div>
+
+<main id="main">
+
+<!-- 1. hero -->
+<section class="scene" id="hero" data-pin style="--h:200vh">
+  <div class="pin hero">
+    <div class="hero-lead" data-show="0,.5">
+      <p class="label acc">Bursa · Nilüfer</p>
+      <p class="label">Bursa Nilüfer’de 150 yataklı kapasitesi, 7/24 acil servisi ve yaklaşık 600 kişilik ekibiyle hizmet veren özel hastane.</p>
+      <aside class="panel" aria-label="Randevu hattı durumu" style="margin-top:22px">
+        <div class="row"><span class="acc">Randevu hattı</span><span><i class="dot" id="hsDot"></i><span id="hsText">Hesaplanıyor</span></span></div>
+        <div class="row"><span><a href="tel:+902243002424">0 (224) 300 24 24</a></span><span id="hsToday"></span></div>
+        <div class="track" aria-hidden="true"><i id="hsOpen"></i><b id="hsNow"></b></div>
+        <div class="row m" aria-hidden="true"><span>00</span><span>06</span><span>12</span><span>18</span><span>24</span></div>
+        <div class="row"><span class="m">Acil servis</span><span>7/24 · 0 (224) 300 24 11</span></div>
+      </aside>
+    </div>
+    <div class="hero-bottom">
+      <div data-show="0,.5">
+        <h1 class="display d-xl" data-scramble aria-label="Marmara Şifa Özel Hastanesi. Şifa, bilgiyle ve güvenle başlar.">Şifa, bilgiyle
+ve güvenle başlar.</h1>
+        <div class="cta"><a class="btn" href="#randevu">Randevu al</a><a class="btn-sq" href="#randevu" aria-label="Randevu bilgilerine git">→</a></div>
+      </div>
+    </div>
+    <p class="label scroll-hint">Kaydırın ↓</p>
+  </div>
+</section>
+
+<!-- 2. numbers -->
+<section class="scene" id="rakamlar" data-pin style="--h:240vh">
+  <div class="pin nums">
+    <header class="head" data-show="0,1">
+      <p class="label acc">Rakamlarla Marmara Şifa</p>
+      <h2 class="display d-md" data-scramble>Bir bakışta hastanemiz</h2>
+      <p class="p">Her yıl 280 binin üzerinde poliklinik muayenesi yapıyor, 18 bine yakın hastayı yatarak tedavi ediyoruz.</p>
+    </header>
+    <div class="nums-grid">
+      <ul class="col col-l" id="colL">
+        <li class="stat"><b data-count="150">150</b><span>yatak kapasitesi</span></li>
+        <li class="stat"><b data-count="20">20</b><span>yataklı yoğun bakım</span></li>
+        <li class="stat"><b data-count="6">6</b><span>ameliyathane</span></li>
+        <li class="stat"><b>7/24</b><span>kesintisiz acil servis</span></li>
+        <li class="stat"><b data-count="600" data-pre="~">~600</b><span>çalışan</span></li>
+      </ul>
+      <ul class="col col-r" id="colR">
+        <li class="stat"><b data-count="110">110</b><span>hekim</span></li>
+        <li class="stat"><b data-count="280">280</b><span>hemşire ve sağlık teknisyeni</span></li>
+        <li class="stat"><b data-count="210">210</b><span>idari ve destek</span></li>
+        <li class="stat"><b data-count="280" data-suf=" bin">280 bin</b><span>yıllık poliklinik muayenesi</span></li>
+        <li class="stat"><b data-count="18" data-suf=" bin">18 bin</b><span>yıllık yatan hasta</span></li>
+      </ul>
+    </div>
+    <div class="nums-foot">
+      <p class="display d-sm" style="max-width:26ch" data-show=".3,1">Sağlığınız bizim için bir sorumluluk, güveniniz bir ölçüt.</p>
+      <div class="team" data-show=".2,1">
+        <p class="label m">Ekibimizin dağılımı · yaklaşık 600 kişi</p>
+        <div class="bar" id="teamBar" aria-hidden="true"><i style="flex:110"></i><i style="flex:280"></i><i style="flex:210"></i></div>
+        <div class="legend"><span><b>110</b> hekim</span><span><b>280</b> hemşire, teknisyen</span><span><b>210</b> idari, destek</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3. mission, vision, values -->
+<section class="scene" id="degerler" data-pin style="--h:300vh">
+  <div class="pin mv">
+    <div class="stack" style="flex:1; align-content:center">
+      <div class="mv-a" data-show="0,.3">
+        <p class="label acc">Misyonumuz</p>
+        <h2 class="display d-md" data-scramble>Her hastaya güvenli, ulaşılabilir ve insan onuruna yaraşır sağlık hizmeti sunmak.</h2>
+      </div>
+      <div class="mv-b" data-show=".33,.63">
+        <p class="label acc">Vizyonumuz</p>
+        <h2 class="display d-md" data-scramble>Bursa’da hastaların ve çalışanların ilk tercih ettiği, güvenilir ve öğrenen bir hastane olmak.</h2>
+      </div>
+      <div class="values" data-show=".66,1">
+        <div class="glass"><span class="idx">01</span><h3>Hasta güvenliği</h3><p>Kimlik doğrulamadan ilaç uygulamasına her adımı çift kontrolle yürütürüz.</p></div>
+        <div class="glass"><span class="idx">02</span><h3>Saygı ve mahremiyet</h3><p>Hastanın bedeni, bilgisi ve kararı üzerinde söz hakkı yalnızca kendisindedir.</p></div>
+        <div class="glass"><span class="idx">03</span><h3>Açıklık</h3><p>Tanıyı, tedaviyi ve maliyeti anlaşılır bir dille anlatırız.</p></div>
+        <div class="glass"><span class="idx">04</span><h3>Bilimsel yaklaşım</h3><p>Kanıta dayalı uygulamaları ve güncel klinik rehberleri esas alırız.</p></div>
+        <div class="glass"><span class="idx">05</span><h3>Süreklilik</h3><p>Acil servisimiz ve yoğun bakımımız yılın her günü, günün her saati açıktır.</p></div>
+        <div class="glass"><span class="idx">06</span><h3>Çevreye duyarlılık</h3><p>Çatı GES ve güneş enerjili otoparkla enerjimizin bir bölümünü güneşten üretiriz.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. infrastructure -->
+<section class="scene" id="altyapi" data-pin style="--h:300vh">
+  <div class="pin">
+    <header class="infra-head" data-show="0,.95">
+      <p class="label acc">Binamız ve altyapımız</p>
+      <h2 class="display d-lg" data-scramble>Güvenli bir yapının içinde</h2>
+      <p class="p">Bir hastane yalnızca doktorlarından ibaret değildir. Binanın dayanıklılığı, enerjinin sürekliliği ve girişlerin kontrolü de tedavinin parçasıdır.</p>
+    </header>
+    <div class="cards" id="cards">
+      <article class="glass fcard" data-x="54" data-r="-14" data-z="-2" data-s="1" data-t0="0.04"><span class="idx">01</span><h3>Depreme dayanıklı yapı</h3><p>Binamız deprem izolatörlü sistemle inşa edilmiştir; hasta ve çalışan güvenliği yapının tasarımından başlar.</p></article>
+      <article class="glass fcard" data-x="47" data-r="12" data-z="2" data-s="0.94" data-t0="0.15"><span class="idx">02</span><h3>Kesintisiz enerji</h3><p>Şebeke kesintisinde jeneratör, otomatik transfer sistemi (ATS) ve UPS devreye girer; ameliyathane, yoğun bakım ve sunucu odası enerjisiz kalmaz.</p></article>
+      <article class="glass fcard" data-x="62" data-r="-10" data-z="3" data-s="1.04" data-t0="0.26"><span class="idx">03</span><h3>Güneşten enerji</h3><p>Çatıdaki güneş enerji santrali (GES) ve güneş enerjili otopark, enerji ihtiyacımızın bir bölümünü karşılar.</p></article>
+      <article class="glass fcard" data-x="50" data-r="14" data-z="-3" data-s="0.96" data-t0="0.37"><span class="idx">04</span><h3>Ayrı ambulans girişi</h3><p>Ambulanslar acil servise ayrı bir girişten ulaşır; hasta ve ziyaretçi trafiği ile karışmaz.</p></article>
+      <article class="glass fcard" data-x="64" data-r="-12" data-z="2" data-s="1" data-t0="0.48"><span class="idx">05</span><h3>Kartlı geçiş ve kamera</h3><p>Hassas alanlara yalnızca yetkili personel kartlı geçişle girer; ortak alanlar kamera sistemiyle izlenir.</p></article>
+      <article class="glass fcard" data-x="48" data-r="12" data-z="-2" data-s="0.98" data-t0="0.59"><span class="idx">06</span><h3>Toplanma alanı</h3><p>Acil durumda binayı güvenle terk etmeniz için dış mekânda belirlenmiş toplanma alanımız vardır.</p></article>
+    </div>
+    <p class="display d-sm note-r" data-show=".82,1" style="text-transform:none"><span class="acc">Hasta dosyalarınız da güvende.</span> Fiziksel hasta arşivimiz ayrı bir binada, kontrollü erişimle saklanır. Elektronik kayıtlarınız ise bodrum katındaki sunucu odamızda korunur.</p>
+  </div>
+</section>
+
+<!-- 5. emergency, ICU, operating rooms -->
+<section class="scene" id="birimler" data-pin style="--h:270vh">
+  <div class="pin units">
+    <header class="head" data-show="0,1">
+      <p class="label acc">Acil servis · Yoğun bakım · Ameliyathane</p>
+      <h2 class="display d-md" data-scramble>En kritik anlarda, en hazır ekip</h2>
+    </header>
+    <div class="stack" style="flex:1; align-content:center">
+      <article class="unit" data-show="0,.33">
+        <p class="big">7/24<small>kesintisiz hizmet</small></p>
+        <div class="glass"><h3>Acil servis</h3><ul>
+          <li>Zemin katta, ambulans girişi ayrı olan müdahale alanı.</li>
+          <li>Gelişte önce triyaj: hastalar aciliyetlerine göre değerlendirilir.</li>
+          <li>Acil röntgen aynı katta; tetkik için merdiven çıkmanız gerekmez.</li>
+          <li>Gözlem salonunda tedavi sonrası izlem yapılır.</li></ul></div>
+      </article>
+      <article class="unit" data-show=".34,.66">
+        <p class="big">20<small>yatak kapasitesi</small></p>
+        <div class="glass"><h3>Yoğun bakım</h3><ul>
+          <li>Ağır hastalar için sürekli monitörizasyon.</li>
+          <li>Ventilatör, infüzyon pompası ve yatak başı monitörler her an kontrol altında.</li>
+          <li>Ziyaretler hastanın durumuna göre kısa görüşme saatlerinde yapılır.</li></ul></div>
+      </article>
+      <article class="unit" data-show=".67,1">
+        <p class="big">6<small>ameliyat salonu</small></p>
+        <div class="glass"><h3>Ameliyathane</h3><ul>
+          <li>Planlı ve acil ameliyatlar için ayrı ayrı donatılmış altı salon.</li>
+          <li>Kesintisiz enerji altyapısı: jeneratör, ATS ve UPS desteği.</li>
+          <li>Ameliyat öncesi bilgilendirme ve onam, hekiminiz tarafından yüz yüze alınır.</li></ul></div>
+      </article>
+    </div>
+    <div class="rail" id="unitRail" aria-hidden="true"><span class="on">Acil servis</span><span>Yoğun bakım</span><span>Ameliyathane</span></div>
+  </div>
+</section>
+
+<!-- 6. diagnostics -->
+<section class="scene" id="tani" data-pin style="--h:240vh">
+  <div class="pin">
+    <header class="head" data-show="0,1">
+      <p class="label acc">Tanı ve destek birimlerimiz</p>
+      <h2 class="display d-lg" data-scramble>Doğru tanı, aynı çatı altında</h2>
+      <p class="p">Tetkiklerin büyük bölümü hastanemizin içinde yapılır; sonuçlar hekiminize hızla ulaşır.</p>
+    </header>
+    <div class="diag" style="flex:1; align-content:center" data-show="0,1">
+      <div class="dlist" id="dlist">
+        <button class="dbtn on" type="button" data-i="0"><span class="idx">01</span>Radyoloji ve görüntüleme</button>
+        <button class="dbtn" type="button" data-i="1"><span class="idx">02</span>Laboratuvar</button>
+        <button class="dbtn" type="button" data-i="2"><span class="idx">03</span>Eczane</button>
+        <button class="dbtn" type="button" data-i="3"><span class="idx">04</span>Hasta kabul ve kayıt</button>
+      </div>
+      <div class="dpanes" id="dpanes">
+        <div class="glass"><h3>Radyoloji ve görüntüleme</h3><ul>
+          <li>Manyetik rezonans (MR) ve bilgisayarlı tomografi (BT) cihazları.</li>
+          <li>Görüntüler dijital ortamda (PACS) saklanır; hekiminiz muayene odasından görüntülerinize anında ulaşır.</li>
+          <li>Acil hastalar için zemin katta ayrı röntgen birimi.</li></ul></div>
+        <div class="glass"><h3>Laboratuvar</h3><ul>
+          <li>Zemin kattaki numune kabul biriminde kan, idrar ve diğer numuneler alınır.</li>
+          <li>Biyokimya ve mikrobiyoloji incelemeleri hastane içinde yapılır.</li>
+          <li>Sonuçlar hekiminize elektronik olarak iletilir.</li></ul></div>
+        <div class="glass"><h3>Eczane</h3><ul>
+          <li>Yatan hastaların ilaçları eczanemizden temin edilir.</li>
+          <li>İlaç uygulaması, hasta kimliği ve ilaç bilgisi eşleştirilerek yapılır.</li></ul></div>
+        <div class="glass"><h3>Hasta kabul ve kayıt</h3><ul>
+          <li>Zemin katta, giriş holünde hasta kabul masaları.</li>
+          <li>SGK provizyonu MEDULA üzerinden alınır.</li>
+          <li>Tetkik ve muayene bilgileriniz, isterseniz e-Nabız’dan da izlenebilir.</li></ul></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 7. floor guide -->
+<section class="scene" id="kat" data-pin style="--h:280vh">
+  <div class="pin">
+    <header class="head" data-show="0,1">
+      <p class="label acc">Kat rehberi</p>
+      <h2 class="display d-lg" data-scramble>Hangi birim hangi katta?</h2>
+    </header>
+    <div class="floors" data-show="0,1">
+      <div class="iso" id="iso" role="group" aria-label="Kat seçici"><div class="iso-stack" id="isoStack"></div></div>
+      <div class="fdetail" id="fdetail" aria-live="polite"></div>
+    </div>
+    <p class="p floor-note m">Asansörler her katta aynı yerdedir. Yönlendirme tabelalarımız kat numarasıyla birlikte renk kodludur; sorularınız için her katta bilgi ve yönlendirme personelimize başvurabilirsiniz.</p>
+  </div>
+</section>
+
+<!-- 8. branches -->
+<section class="scene" id="branslar">
+  <div class="pin branch">
+    <header class="head">
+      <p class="label acc">Poliklinik branşlarımız</p>
+      <h2 class="display d-lg">110 hekimle, çok disiplinli bir kadro</h2>
+      <p class="p">Muayene ve kontrol ihtiyaçlarınız için aşağıdaki branşlarda poliklinik hizmeti veriyoruz.</p>
+    </header>
+    <div class="bctrl" id="bctrl">
+      <button class="fchip" type="button" data-g="" aria-pressed="true">Tümü</button>
+      <button class="fchip" type="button" data-g="Dahili bilimler" aria-pressed="false">Dahili bilimler</button>
+      <button class="fchip" type="button" data-g="Cerrahi bilimler" aria-pressed="false">Cerrahi bilimler</button>
+      <button class="fchip" type="button" data-g="Kadın ve çocuk" aria-pressed="false">Kadın ve çocuk</button>
+      <button class="fchip" type="button" data-g="Destek branşlar" aria-pressed="false">Destek branşlar</button>
+      <input class="search" id="bq" type="search" placeholder="Branş ara" aria-label="Branş ara" autocomplete="off">
+    </div>
+    <p class="count" id="bcount" aria-live="polite"></p>
+    <ul class="tags" id="tags"></ul>
+    <p class="p m">Muayeneler 1. ve 2. kattaki poliklinik bölümlerimizde yapılır. Branşların güncel hekim kadrosu ve çalışma günleri için randevu hattımızı arayabilir veya web sitemize bakabilirsiniz.</p>
+  </div>
+</section>
+
+<!-- 9. appointment -->
+<section class="scene" id="randevu">
+  <div class="pin appt">
+    <header class="head">
+      <p class="label acc">Randevu ve hasta kabul</p>
+      <h2 class="display d-lg">Randevudan muayeneye dört adım</h2>
+    </header>
+    <div class="ways">
+      <article class="glass"><span class="idx">MHRS</span><h3>Merkezi Hekim Randevu Sistemi</h3><p>182 numaralı hattı arayın veya mhrs.gov.tr üzerinden randevu alın.</p></article>
+      <article class="glass"><span class="idx">ONLINE</span><h3>Online randevu sitemiz</h3><p>Web sitemizden branş ve hekim seçerek gün ve saat belirleyin.</p></article>
+      <article class="glass"><span class="idx">TELEFON</span><h3>Randevu hattımız</h3><p><a href="tel:+902243002424">0 (224) 300 24 24</a> · hafta içi 08:00–19:00, cumartesi 08:00–14:00.</p></article>
+      <article class="glass"><span class="idx">YÜZ YÜZE</span><h3>Hastaneye gelerek</h3><p>Zemin kattaki hasta kabul masalarımızdan yüz yüze randevu oluşturabilirsiniz.</p></article>
+    </div>
+    <p class="label acc" style="margin-top:12px">Hastane içinde süreç</p>
+    <ol class="steps" id="steps">
+      <li class="on"><span class="idx">1</span><h3>Randevu</h3><p>Dilediğiniz yoldan randevunuzu alın.</p></li>
+      <li><span class="idx">2</span><h3>Kabul</h3><p>Zemin kattaki hasta kabulde kaydınız ve provizyonunuz tamamlanır.</p></li>
+      <li><span class="idx">3</span><h3>Muayene</h3><p>Poliklinik katında hekiminizle görüşürsünüz.</p></li>
+      <li><span class="idx">4</span><h3>Tetkik ve tedavi</h3><p>Gerekirse tetkikleriniz aynı gün yapılır, tedaviniz planlanır.</p></li>
+    </ol>
+    <div class="bring glass">
+      <span class="label acc">Yanınızda bulundurun</span>
+      <ul>
+        <li>T.C. kimlik kartı (yabancı uyruklular için pasaport veya ikamet kartı)</li>
+        <li>Varsa sevk belgesi, önceki tetkik sonuçları ve düzenli kullandığınız ilaçların listesi</li>
+        <li>Özel sağlık sigortanız varsa poliçe bilgileri</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 10. rights, safety, privacy -->
+<section class="scene" id="haklar">
+  <div class="pin rights">
+    <header class="head">
+      <p class="label acc">Hasta hakları, güvenlik ve gizlilik</p>
+      <h2 class="display d-lg">Haklarınız ve güvenliğiniz güvence altında</h2>
+    </header>
+    <div class="two">
+      <div class="glass"><h3>Hasta haklarınız</h3>
+        <ul class="rlist">
+          <li>Saygı görme ve ayrımcılığa uğramama</li>
+          <li>Hastalığınız ve tedaviniz hakkında anlaşılır bilgi alma</li>
+          <li>Tedaviyi kabul etme veya reddetme; onamınızı verme veya geri alma</li>
+          <li>Mahremiyetin korunması</li>
+          <li>Hekim seçimi ve ikinci görüş isteme</li>
+          <li>Şikâyet ve öneride bulunma</li>
+        </ul></div>
+      <div class="glass"><h3>Hasta güvenliği</h3>
+        <ul class="rlist">
+          <li><b>Bileziğinizle kimlik doğrulama:</b> ilaç, kan ve tetkik öncesi adınız ve doğum tarihiniz sorulur.</li>
+          <li><b>El hijyeni:</b> personelimiz ve siz için her yatak başında el antiseptiği.</li>
+          <li><b>Düşme önlemi:</b> riskli hastalarda yatak kenarlığı ve uyarı işareti.</li>
+          <li>Her uygulama öncesi hasta bilgisinin ikinci kez kontrolü.</li>
+        </ul></div>
+    </div>
+    <div class="glass kvkk">
+      <span class="label acc">Kişisel verileriniz emanetimizdir</span>
+      <p>Sağlık bilgileriniz, 6698 sayılı Kişisel Verilerin Korunması Kanunu kapsamında “özel nitelikli kişisel veri” sayılır. Bu bilgilere yalnızca tedavinizle ilgili yetkili personel, görevi gereği ve kayıt altına alınarak erişir.</p>
+      <p>Hastane Bilgi Sistemimiz (HBYS), laboratuvar ve görüntüleme sistemlerimiz ile randevu sitemizin güvenliği için ISO/IEC 27001:2022 standardına uygun bir Bilgi Güvenliği Yönetim Sistemi (BGYS) kuruyor ve işletiyoruz.</p>
+    </div>
+    <p class="p">Şikâyet ve önerileriniz için: 2. kattaki Hasta İlişkileri Birimi · <a href="mailto:hasta.iliskileri@marmarasifa.com.tr">hasta.iliskileri@marmarasifa.com.tr</a>. Her başvuruya yazılı olarak yanıt veririz.</p>
+  </div>
+</section>
+
+<!-- 11. finale: the particles settle into the logo -->
+<section class="scene" id="finale" data-pin style="--h:200vh">
+  <div class="pin finale">
+    <div class="fin-space"></div>
+    <div class="fin-copy" data-show=".34,1">
+      <svg class="f-word" role="img" aria-label="Marmara Şifa Özel Hastanesi"><use href="#lg-word"/></svg>
+      <p class="display d-lg" data-scramble>Sizi bekliyoruz.</p>
+      <div class="cta"><a class="btn" href="#iletisim">Bize ulaşın</a><a class="btn-sq" href="#iletisim" aria-label="İletişim bilgilerine git">↓</a></div>
+    </div>
+  </div>
+</section>
+
+<!-- 12. visitors + contact -->
+<section class="scene" id="iletisim">
+  <div class="pin contact">
+    <header class="head">
+      <p class="label acc">Ziyaretçi bilgileri, ulaşım ve iletişim</p>
+      <h2 class="display d-lg">Sizi bekliyoruz</h2>
+    </header>
+    <div class="visit">
+      <article class="glass"><span class="idx">ZİYARET SAATLERİ</span><h3>Her gün 15:00–17:00 ve 19:00–20:00</h3><p>Yoğun bakımda hasta durumuna göre kısa görüşme saatleri uygulanır.</p></article>
+      <article class="glass"><span class="idx">REFAKATÇİ</span><h3>Bir refakatçi kalabilir</h3><p>Yatan hastalarımız için bir refakatçi kalabilir. Refakatçi kartı kat hemşire istasyonundan alınır.</p></article>
+      <article class="glass"><span class="idx">OTOPARK</span><h3>Güneş enerjili otopark</h3><p>Hastane girişinde güneş enerjili otoparkımız vardır. Acil serviste ambulans girişi park alanı olarak kullanılmaz.</p></article>
+      <article class="glass"><span class="idx">ACİL DURUM</span><h3>Alarm durumunda</h3><p>Personelimizin yönlendirmesini izleyin ve binayı dış toplanma alanına doğru terk edin.</p></article>
+    </div>
+    <p class="label acc" style="margin-top:12px">Bize ulaşın</p>
+    <div class="reach">
+      <div><span class="label m">Adres</span><span class="v">Özlüce Mah. Şifa Cad. No: 24<br>Nilüfer / Bursa</span></div>
+      <div><span class="label m">Santral</span><a class="v" href="tel:+902243002400">0 (224) 300 24 00</a></div>
+      <div><span class="label m">Randevu hattı</span><a class="v" href="tel:+902243002424">0 (224) 300 24 24</a></div>
+      <div><span class="label m">Acil servis (7/24)</span><a class="v" href="tel:+902243002411">0 (224) 300 24 11</a><span class="m" style="font-size:13px">Ambulans için 112</span></div>
+      <div><span class="label m">Web</span><span class="v">www.marmarasifa.com.tr</span></div>
+      <div><span class="label m">E-posta</span><a class="v" href="mailto:bilgi@marmarasifa.com.tr">bilgi@marmarasifa.com.tr</a></div>
+      <div><span class="label m">KEP</span><span class="v">marmarasifa@hs01.kep.tr</span></div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="foot">
+  <p>Marmara Şifa Özel Sağlık Hizmetleri A.Ş. · Vergi Kimlik No: 412 883 7558 · MERSİS No: 0412 8837 5580 0017 · Bursa Ticaret Sicil No: 118402 · Hastane Tanıtım ve Hasta Rehberi, Sürüm 1.0 · Son güncelleme: 09.11.2026</p>
+</footer>
+
+<script>
+(() => {
+  'use strict';
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const html = document.documentElement;
+  const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const sm = (t) => t * t * (3 - 2 * t);
+  const reduceMq = matchMedia('(prefers-reduced-motion: reduce)');
+  const storyMq = matchMedia('(min-width: 901px) and (min-height: 641px) and (prefers-reduced-motion: no-preference)');
+
+  /* =============== data =============== */
+  const FLOORS = [
+    { k: '5', t: 'Yatan hasta servisi', d: 'Dahili ve kadın doğum servisleri · tek ve çift kişilik odalar' },
+    { k: '4', t: 'Yatan hasta servisi', d: 'Cerrahi ve ortopedi servisleri · hemşire istasyonu' },
+    { k: '3', t: 'Ameliyathane ve yoğun bakım', d: '6 ameliyat salonu · 20 yataklı yoğun bakım · yakın bekleme alanı' },
+    { k: '2', t: 'Poliklinik 2 ve idari birimler', d: 'Poliklinik muayene odaları · hasta ilişkileri · toplantı ve eğitim salonu' },
+    { k: '1', t: 'Poliklinik 1 ve görüntüleme', d: 'Poliklinik muayene odaları · radyoloji: MR, BT, ultrason' },
+    { k: 'Z', t: 'Zemin kat', d: 'Acil servis · triyaj · hasta kabul · numune kabul · mikrobiyoloji · acil röntgen · gözlem salonu · ambulans girişi' },
+    { k: 'B', t: 'Bodrum', d: 'Teknik hizmetler · sunucu odası · UPS ve jeneratör · depolar (hasta ve ziyaretçi girişi yoktur)' }
+  ];
+  const BRANCHES = {
+    'Dahili bilimler': ['Dahiliye (İç Hastalıkları)', 'Kardiyoloji', 'Nöroloji', 'Göğüs Hastalıkları', 'Gastroenteroloji', 'Endokrinoloji', 'Dermatoloji', 'Psikiyatri'],
+    'Cerrahi bilimler': ['Genel Cerrahi', 'Ortopedi ve Travmatoloji', 'Beyin ve Sinir Cerrahisi', 'Üroloji', 'Kulak Burun Boğaz', 'Göz Hastalıkları', 'Plastik ve Estetik Cerrahi'],
+    'Kadın ve çocuk': ['Kadın Hastalıkları ve Doğum', 'Çocuk Sağlığı ve Hastalıkları', 'Çocuk Cerrahisi'],
+    'Destek branşlar': ['Anestezi ve Reanimasyon', 'Fizik Tedavi ve Rehabilitasyon', 'Radyoloji', 'Biyokimya ve Mikrobiyoloji', 'Diyet ve Beslenme']
+  };
+
+  /* =============== floor guide =============== */
+  const isoStack = $('#isoStack'), fdetail = $('#fdetail');
+  const plates = FLOORS.slice().reverse().map((f, i) => {           // B at the bottom of the stack
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'plate'; b.style.setProperty('--i', i);
+    b.textContent = (f.k === 'Z' ? 'ZEMİN' : f.k === 'B' ? 'BODRUM' : f.k + '. KAT');
+    b.setAttribute('aria-label', f.k === 'Z' ? 'Zemin kat' : f.k === 'B' ? 'Bodrum' : f.k + '. kat');
+    isoStack.appendChild(b);
+    return b;
+  });
+  let floorIdx = -1;
+  function setFloor(i, fromUser) {
+    if (i === floorIdx) return;
+    floorIdx = i;
+    const f = FLOORS[i];
+    plates.forEach((p, n) => p.classList.toggle('on', n === FLOORS.length - 1 - i));
+    fdetail.innerHTML = '<p class="num">' + f.k + '</p><h3>' + f.t + '</h3><ul class="chips">' +
+      f.d.split(' · ').map((s) => '<li>' + s + '</li>').join('') + '</ul>';
+  }
+  plates.forEach((p, n) => p.addEventListener('click', () => {
+    const i = FLOORS.length - 1 - n;
+    if (story) scrollToSceneProgress('kat', (i + 0.5) / FLOORS.length); else setFloor(i);
+  }));
+  setFloor(5);
+
+  /* =============== branches =============== */
+  const tags = $('#tags'), bq = $('#bq'), bcount = $('#bcount'), bctrl = $('#bctrl');
+  let bGroup = '';
+  const fold = (s) => s.toLocaleLowerCase('tr').replace(/ı/g, 'i').normalize('NFD').replace(/[̀-ͯ]/g, '');
+  function renderBranches() {
+    const q = fold(bq.value.trim());
+    const out = [];
+    for (const [g, list] of Object.entries(BRANCHES)) {
+      if (bGroup && g !== bGroup) continue;
+      for (const n of list) if (!q || fold(n).includes(q)) out.push([g, n]);
+    }
+    tags.innerHTML = out.map(([g, n]) => '<li class="tag">' + n + '<small>' + g + '</small></li>').join('');
+    bcount.textContent = out.length ? out.length + ' branş' : 'Eşleşen branş bulunamadı. Randevu hattımız size yardımcı olur.';
+  }
+  bctrl.addEventListener('click', (e) => {
+    const b = e.target.closest('.fchip'); if (!b) return;
+    bGroup = b.dataset.g;
+    $$('.fchip', bctrl).forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    renderBranches();
+  });
+  bq.addEventListener('input', renderBranches);
+  renderBranches();
+
+  /* =============== hero status panel (Istanbul time) =============== */
+  const HOURS = { Mon: [8, 19], Tue: [8, 19], Wed: [8, 19], Thu: [8, 19], Fri: [8, 19], Sat: [8, 14], Sun: null };
+  const fmt = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/Istanbul', weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function updateStatus() {
+    const parts = Object.fromEntries(fmt.formatToParts(new Date()).map((p) => [p.type, p.value]));
+    const h = +parts.hour + +parts.minute / 60, hr = HOURS[parts.weekday];
+    const open = hr && h >= hr[0] && h < hr[1];
+    $('#hsDot').classList.toggle('off', !open);
+    $('#hsText').textContent = open ? 'Şu an açık' : 'Şu an kapalı';
+    $('#hsToday').textContent = hr ? 'Bugün ' + pad(hr[0]) + ':00–' + pad(hr[1]) + ':00' : 'Bugün kapalı';
+    const o = $('#hsOpen');
+    if (hr) { o.style.display = ''; o.style.left = (hr[0] / 24 * 100) + '%'; o.style.width = ((hr[1] - hr[0]) / 24 * 100) + '%'; } else o.style.display = 'none';
+    $('#hsNow').style.left = 'calc(' + (h / 24 * 100) + '% - 1px)';
+  }
+  updateStatus(); setInterval(updateStatus, 30000);
+
+  /* =============== story controller =============== */
+  const scenes = $$('.scene').map((el) => ({ el, id: el.id, pin: el.hasAttribute('data-pin'), top: 0, h: 0, q: 0 }));
+  const byId = Object.fromEntries(scenes.map((s) => [s.id, s]));
+  const shows = $$('[data-show]').map((el) => {
+    const [a, b] = el.dataset.show.split(',').map(Number);
+    return { el, a, b, sc: scenes.find((s) => s.el.contains(el)), t: -1, done: false };
+  });
+  const fcards = $$('.fcard').map((el) => ({ el, x: +el.dataset.x, r: +el.dataset.r, z: +el.dataset.z, s: +el.dataset.s, t0: +el.dataset.t0 }));
+  let story = false, vh = innerHeight, vw = innerWidth, scrollY = 0;
+
+  const span = (s) => Math.max(s.h - vh, vh * 0.5);
+  function measure() {
+    vh = innerHeight; vw = innerWidth;
+    for (const s of scenes) { const r = s.el.getBoundingClientRect(); s.top = r.top + window.scrollY; s.h = r.height; }
+    buildFrames();
+  }
+  function scrollToSceneProgress(id, p) {
+    const s = byId[id]; if (!s) return;
+    window.scrollTo({ top: s.top + p * span(s), behavior: 'smooth' });
+  }
+  function setMode() {
+    story = storyMq.matches;
+    html.classList.toggle('story', story);
+    html.classList.toggle('flow', !story);
+    if (!story) {
+      for (const s of shows) { s.el.style.opacity = ''; s.el.style.transform = ''; s.el.style.visibility = ''; s.t = -1; }
+      for (const c of fcards) { c.el.style.cssText = ''; }
+      $('#teamBar').querySelectorAll('i').forEach((i) => { i.style.transform = ''; });
+      colL.style.transform = ''; colR.style.transform = '';
+    }
+    diagIdx = -1; setDiag(story ? 0 : Math.max(0, dbtns.findIndex((b) => b.classList.contains('on'))));
+    measure();
+  }
+
+  const GL = 'ABCÇDEFGĞHIİJKLMNOÖPRSŞTUÜVYZ0123456789/+';
+  function scramble(el) {
+    const txt = el.dataset.txt || (el.dataset.txt = el.textContent);
+    const t0 = performance.now(), d = 650 + txt.length * 9;
+    (function step(now) {
+      const k = clamp((now - t0) / d), n = Math.floor(txt.length * k);
+      let o = '';
+      for (let i = 0; i < txt.length; i++) { const ch = txt[i]; o += (i < n || ch === ' ' || ch === '\n') ? ch : GL[(Math.random() * GL.length) | 0]; }
+      el.textContent = k < 1 ? o : txt;
+      if (k < 1) requestAnimationFrame(step);
+    })(t0);
+  }
+  function countUp(b) {
+    const to = +b.dataset.count, pre = b.dataset.pre || '', suf = b.dataset.suf || '', t0 = performance.now(), d = 1200;
+    (function step(now) {
+      const k = clamp((now - t0) / d);
+      b.textContent = pre + Math.round(to * (1 - Math.pow(1 - k, 3))) + suf;
+      if (k < 1) requestAnimationFrame(step);
+    })(t0);
+  }
+  function trigger(el) {
+    const sc = el.hasAttribute('data-scramble') ? [el] : [];
+    sc.push(...$$('[data-scramble]', el));
+    sc.forEach((e) => { if (!e.dataset.done) { e.dataset.done = '1'; scramble(e); } });
+    $$('[data-count]', el).forEach((b) => { if (!b.dataset.done) { b.dataset.done = '1'; countUp(b); } });
+  }
+  function updateShows() {
+    const E = 0.07;
+    for (const s of shows) {
+      const q = s.sc.q;
+      const tin = s.a <= 0 ? 1 : sm(clamp((q - s.a) / E));
+      const tout = s.b >= 1 ? 1 : 1 - sm(clamp((q - (s.b - E)) / E));
+      const t = tin * tout;
+      if (Math.abs(t - s.t) < 0.002) continue;
+      s.t = t;
+      const up = q < (s.a + s.b) / 2 ? 1 : -1;
+      s.el.style.opacity = t.toFixed(3);
+      s.el.style.transform = 'translate3d(0,' + ((1 - t) * 26 * up).toFixed(1) + 'px,0)';
+      s.el.style.visibility = t < 0.004 ? 'hidden' : 'visible';
+      if (t > 0.25 && !s.done) { s.done = true; trigger(s.el); }
+    }
+  }
+  function updateCards() {
+    const sc = byId.altyapi, q = sc.q;
+    for (const c of fcards) {
+      const t = (q - c.t0) / 0.4;
+      const o = sm(clamp(t / 0.14)) * sm(clamp((1 - t) / 0.14));
+      if (t < -0.05 || t > 1.05) { c.el.style.visibility = 'hidden'; continue; }
+      const y = lerp(vh * 0.98, -vh * 0.34, clamp(t));
+      const blur = Math.pow(Math.abs(t - 0.5) * 2, 2) * 4.5;
+      c.el.style.visibility = 'visible';
+      c.el.style.left = c.x + '%';
+      c.el.style.opacity = o.toFixed(3);
+      c.el.style.filter = blur > 0.2 ? 'blur(' + blur.toFixed(1) + 'px)' : 'none';
+      c.el.style.transform = 'translate3d(0,' + y.toFixed(1) + 'px,0) perspective(900px) rotateY(' + c.r + 'deg) rotateZ(' + c.z + 'deg) scale(' + c.s + ')';
+    }
+  }
+  const colL = $('#colL'), colR = $('#colR'), teamBars = $$('#teamBar i');
+  function updateNums() {
+    const q = byId.rakamlar.q;
+    colL.style.transform = 'translate3d(0,' + ((0.5 - q) * 70).toFixed(1) + 'px,0)';
+    colR.style.transform = 'translate3d(0,' + ((q - 0.5) * 70).toFixed(1) + 'px,0)';
+    const k = sm(clamp((q - 0.25) / 0.35));
+    teamBars.forEach((b, i) => { b.style.transform = 'scaleX(' + clamp(k * 1.4 - i * 0.2).toFixed(3) + ')'; });
+  }
+  const rail = $$('#unitRail span'), dbtns = $$('#dlist .dbtn'), dpanes = $$('#dpanes > *');
+  let diagIdx = -1;
+  function setDiag(i) {
+    if (i === diagIdx) return; diagIdx = i;
+    dbtns.forEach((b, n) => b.classList.toggle('on', n === i));
+    if (!story) dpanes.forEach((p, n) => { p.style.display = n === i ? '' : 'none'; p.style.opacity = ''; p.style.visibility = ''; p.style.transform = ''; p.style.transition = ''; });
+    else dpanes.forEach((p, n) => { p.style.display = ''; p.style.opacity = n === i ? '1' : '0'; p.style.visibility = n === i ? 'visible' : 'hidden'; p.style.transform = n === i ? 'none' : 'translateY(14px)'; p.style.transition = 'opacity .4s, transform .4s, visibility .4s'; });
+  }
+  dbtns.forEach((b, n) => b.addEventListener('click', () => { if (story) scrollToSceneProgress('tani', (n + 0.5) / 4); else setDiag(n); }));
+  const stepsEl = $('#steps'), stepLis = $$('#steps li');
+  function updateSteps() {
+    const r = stepsEl.getBoundingClientRect();
+    const p = clamp((vh * 0.78 - r.top) / (r.height + vh * 0.2));
+    stepsEl.style.setProperty('--prog', (0.12 + p * 0.88).toFixed(3));
+    stepLis.forEach((li, i) => li.classList.toggle('on', p > i / 4 - 0.02));
+  }
+  function updateDom() {
+    for (const s of scenes) s.q = clamp((scrollY - s.top) / span(s));
+    if (story) {
+      updateShows(); updateCards(); updateNums();
+      const u = Math.min(2, Math.floor(byId.birimler.q * 3));
+      rail.forEach((r, i) => r.classList.toggle('on', i === u));
+      setDiag(Math.min(3, Math.floor(byId.tani.q * 4)));
+      setFloor(Math.min(FLOORS.length - 1, Math.floor(byId.kat.q * FLOORS.length)));
+    } else if (diagIdx < 0) setDiag(0);
+    updateSteps();
+    $('#nav').classList.toggle('scrolled', scrollY > 30);
+  }
+
+  /* nav: anchors, active link, mobile menu */
+  const links = $$('.links a');
+  function goTo(hash) {
+    const s = byId[hash.slice(1)]; if (!s) return;
+    const y = s.pin && story ? s.top + span(s) * 0.04 : s.top;
+    window.scrollTo({ top: y, behavior: reduceMq.matches ? 'auto' : 'smooth' });
+  }
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('a[href^="#"]'); if (!a || a.getAttribute('href') === '#') return;
+    if (!byId[a.getAttribute('href').slice(1)]) return;
+    e.preventDefault(); closeMenu(); goTo(a.getAttribute('href'));
+  });
+  const menu = $('#menu'), menuBtn = $('#menuBtn');
+  function closeMenu() { menu.hidden = true; menuBtn.setAttribute('aria-expanded', 'false'); }
+  menuBtn.addEventListener('click', () => { const open = menu.hidden; menu.hidden = !open; menuBtn.setAttribute('aria-expanded', String(open)); });
+  addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMenu(); });
+  function updateNavActive() {
+    const mid = scrollY + vh * 0.4;
+    const cur = scenes.filter((s) => s.top <= mid).pop();
+    links.forEach((a) => a.setAttribute('aria-current', String(!!cur && a.getAttribute('href') === '#' + cur.id)));
+  }
+
+  /* =============== WebGL: one particle cloud that changes shape per scene =============== */
+  const G = {
+    blue: { gr: 0.45, gg: 0.62, gb: 1.0 }, warm: { gr: 1.0, gg: 0.6, gb: 0.2 },
+    green: { gr: 0.55, gg: 0.95, gb: 0.7 }, teal: { gr: 0.2, gg: 0.85, gb: 0.75 }
+  };
+  const DEF = { stage: 0, open: 0, scale: 0.6, ox: 0, oy: -0.7, spin: 0.3, op: 1, glow: 0.8, gy: 0.5, hs: 1.6, sky: 0, beam: 0, ...G.blue };
+  const KEYS = {
+    hero: [[0, { open: 0.3, scale: 0.66, ox: 1.25, oy: 0.1, spin: 0.35, glow: 0.9, gy: 0, hs: 2.1, ...G.teal }], [1, { open: 0.7, scale: 0.7, ox: 1.0, oy: 0.1, glow: 1 }]],
+    rakamlar: [[0, { open: 0.8, scale: 0.7, ox: 0.4, oy: 0.05, glow: 0.8, gy: 0 }], [0.5, { open: 1, scale: 0.78, ox: 0, oy: 0, glow: 0.7, hs: 2.4 }], [1, { open: 1, scale: 0.78, ox: 0, oy: 0 }]],
+    degerler: [[0, { stage: 1, open: 1, scale: 0.95, ox: 1.2, oy: -0.1, spin: 0.5, glow: 0.7, gy: 0, sky: 0.9, hs: 2, ...G.blue }], [0.3, { ox: 1.2 }], [0.48, { ox: -1.2 }], [0.62, { ox: -1.2 }], [0.78, { ox: 0, oy: 0.65, scale: 0.5 }], [1, { ox: 0, oy: 0.65, scale: 0.5 }]],
+    altyapi: [[0, { stage: 2, ox: 0.9, oy: 0, scale: 0.8, spin: 0.6, glow: 1, gy: 0, sky: 0, hs: 2.4, ...G.warm }], [1, { ox: 0.9, scale: 1 }]],
+    birimler: [[0, { stage: 2, ox: 1.3, oy: 0.05, scale: 1.05, op: 0.55, glow: 0.6, beam: 0.95 }], [1, { ox: 1.15, scale: 1.1, op: 0.45, beam: 1 }]],
+    tani: [[0, { stage: 3, ox: 1.15, oy: 0, scale: 0.9, spin: 0.15, op: 0.95, glow: 0.35, beam: 0.25, ...G.green }], [1, { scale: 1, beam: 0.1 }]],
+    kat: [[0, { stage: 3, ox: 0, oy: 0, scale: 0.85, op: 0.3, beam: 0, glow: 0.15 }], [1, {}]],
+    branslar: [[0, { ox: -0.7, scale: 0.7, op: 0.26 }], [1, {}]],
+    randevu: [[0, { ox: 0.7, scale: 0.7, op: 0.26 }], [1, {}]],
+    haklar: [[0, { ox: 0, scale: 0.95, op: 0.5, glow: 0.4 }], [1, { op: 0.42 }]],
+    finale: [[0, { stage: 3.3, ox: 0, oy: 0.66, scale: 0.78, op: 0.9, glow: 0.4, ...G.teal }], [0.5, { stage: 4, scale: 0.66, spin: 0, op: 1, glow: 0.6, hs: 1.6 }], [1, {}]],
+    iletisim: [[0, { stage: 4, oy: 1.9, scale: 0.45, spin: 0, op: 0.1, glow: 0 }], [1, {}]]
+  };
+  let frames = [];
+  function buildFrames() {
+    frames = []; let cur = { ...DEF };
+    for (const s of scenes) {
+      for (const [p, part] of KEYS[s.id] || []) { cur = { ...cur, ...part }; frames.push({ y: s.top + p * span(s), p: cur }); }
+    }
+    frames.sort((a, b) => a.y - b.y);
+  }
+  const NUM = Object.keys(DEF);
+  const P = { ...DEF };
+  function paramsAt(y) {
+    if (!frames.length) return DEF;
+    let A = frames[0], B = frames[0], t = 0;
+    if (y >= frames[frames.length - 1].y) { A = B = frames[frames.length - 1]; }
+    else if (y > frames[0].y) {
+      for (let j = 0; j < frames.length - 1; j++) if (y < frames[j + 1].y) { A = frames[j]; B = frames[j + 1]; t = sm(clamp((y - A.y) / Math.max(1, B.y - A.y))); break; }
+    }
+    for (const k of NUM) P[k] = lerp(A.p[k], B.p[k], t);
+    return P;
+  }
+
+  const VERT = `
+    uniform float uTime, uStage, uOpen, uPR, uSize, uOpacity, uMotion, uIntro, uAspect; uniform vec3 uMouse;
+    attribute vec4 aLot; attribute vec3 aDand, aSun, aIris, aLogo, aCol, aRnd;
+    varying vec3 vColor; varying float vAlpha;
+    vec3 lotusPos() {
+      float layer = aLot.y;
+      if (layer > 2.5) {
+        if (layer < 3.5) {
+          float t = aLot.z;
+          float sway = sin(uTime * 0.7 + t * 3.0) * 0.06 * (1.0 - t) * uMotion;
+          return vec3(sway + (aRnd.x - 0.5) * 0.03, mix(-3.7, -0.05, t), (aRnd.y - 0.5) * 0.03);
+        }
+        return (aRnd - 0.5) * vec3(0.5, 0.65, 0.5) * mix(0.3, 1.0, uOpen);
+      }
+      float lf = layer * 0.5;
+      float len = mix(1.6, 1.0, lf);
+      float wid = mix(0.72, 0.38, lf);
+      float u = aLot.z, v = aLot.w, phi = aLot.x;
+      /* closed bud: petals wrap a cylinder around the axis */
+      float nPet = layer < 0.5 ? 9.0 : (layer < 1.5 ? 7.0 : 5.0);
+      float rb = mix(0.42, 0.2, lf) * sin(3.14159265 * pow(u, 0.65)) * (1.0 - 0.12 * u);
+      float ang = phi + v * (3.14159265 / nPet) * 1.2;
+      vec3 bud = vec3(rb * sin(ang), u * len * 0.94 + lf * 0.04, rb * cos(ang));
+      /* open lotus: a blade tilted outward, tips curling back */
+      float w = wid * sin(3.14159265 * pow(u, 0.72)) * (1.0 - 0.2 * u);
+      float px = v * w, py = u * len, pz = -v * v * w * 0.45;
+      float th = mix(mix(0.08, 0.2, lf), mix(0.7, 0.26, lf), uOpen) + u * mix(-0.18, 0.14, uOpen);
+      float c = cos(th), s = sin(th);
+      float y1 = py * c - pz * s;
+      float z1 = py * s + pz * c + mix(0.1, 0.06, lf);
+      float cp = cos(phi), sp = sin(phi);
+      vec3 blade = vec3(px * cp + z1 * sp, y1 + lf * 0.05, -px * sp + z1 * cp);
+      return mix(bud, blade, smoothstep(0.0, 1.0, uOpen));
+    }
+    vec3 lotusCol() {
+      float layer = aLot.y;
+      if (layer > 3.5) return vec3(1.0, 0.82, 0.5) * 1.25;
+      if (layer > 2.5) return vec3(0.55, 1.0, 0.78) * 0.9;
+      float lf = layer * 0.5;
+      vec3 base = mix(vec3(0.5, 0.72, 1.0), vec3(0.85, 0.92, 1.0), lf);
+      float edge = smoothstep(0.65, 1.0, abs(aLot.w));
+      float tip = smoothstep(0.3, 1.0, aLot.z);
+      return base * (0.5 + 0.95 * edge + 0.5 * tip);
+    }
+    /* the logo takes the flower's place: it assembles from a swirl on load,
+       breathes with a ripple, and 'blooms' (depth + spread) as uOpen rises */
+    vec3 logoBloom() {
+      vec3 b = aLogo;
+      float r = length(b.xy);
+      float rip = sin(uTime * 1.1 - r * 2.6 + aRnd.x * 0.6) * uMotion;
+      b.xy *= 1.0 + 0.018 * rip + 0.07 * uOpen;
+      b.z += (aRnd.z - 0.5) * 0.34 * uOpen + 0.05 * rip * uOpen;
+      float t = clamp(uIntro * 1.55 - aRnd.x * 0.55, 0.0, 1.0);
+      float e = 1.0 - pow(1.0 - t, 3.0);
+      vec3 sc = (aRnd - 0.5) * vec3(8.0, 5.5, 4.0);
+      vec3 q = mix(sc, b, e);
+      float ang = (1.0 - e) * (2.4 + 3.2 * aRnd.y);
+      float ca = cos(ang), sa = sin(ang);
+      q.xy = mat2(ca, -sa, sa, ca) * q.xy;
+      return q;
+    }
+    vec3 target(float k) {
+      if (k < 0.5) return logoBloom();
+      if (k < 1.5) return aDand;
+      if (k < 2.5) return aSun;
+      if (k < 3.5) return aIris;
+      return aLogo;
+    }
+    vec3 tcolor(float k) {
+      if (k < 0.5) return aCol * 1.15;
+      if (k < 1.5) {
+        if (aLot.y > 2.5 && aLot.y < 3.5) return vec3(0.6, 1.0, 0.8) * 0.9;
+        float r = length(aDand);
+        vec3 b = vec3(0.8, 0.88, 1.0) * (0.7 + 0.5 * smoothstep(0.4, 1.2, r));
+        return mix(vec3(1.0, 0.72, 0.32) * 1.35, b, smoothstep(0.12, 0.5, r));
+      }
+      if (k < 2.5) {
+        float r = length(aSun);
+        return mix(vec3(1.0, 0.78, 0.38) * 1.4, vec3(1.0, 0.58, 0.2) * 0.95, smoothstep(0.1, 1.2, r));
+      }
+      if (k < 3.5) {
+        float r = length(aIris.xy);
+        return vec3(0.62, 0.82, 0.62) * (0.45 + 0.8 * aRnd.x) * (0.55 + 0.7 * smoothstep(0.6, 1.35, r));
+      }
+      return aCol;
+    }
+    float tsize(float k) { return k < 0.5 ? 1.15 : (k < 1.5 ? 0.9 : (k < 2.5 ? 1.0 : (k < 3.5 ? 0.85 : 1.15))); }
+    void main() {
+      float s = clamp(uStage, 0.0, 3.999);
+      float k0 = floor(s);
+      float f = smoothstep(0.0, 1.0, s - k0);
+      vec3 p = mix(target(k0), target(k0 + 1.0), f);
+      float burst = sin(3.14159265 * f);
+      float a = burst * (aRnd.x - 0.5) * 3.0;
+      float ca = cos(a), sa = sin(a);
+      p.xz = mat2(ca, -sa, sa, ca) * p.xz;
+      p += (aRnd - 0.5) * burst * 1.6;
+      float calm = (1.0 - 0.85 * smoothstep(3.3, 4.0, uStage)) * (1.0 - 0.5 * (1.0 - smoothstep(0.0, 0.8, uStage)));
+      p += 0.014 * uMotion * calm * vec3(sin(uTime * 0.7 + aRnd.x * 40.0), cos(uTime * 0.6 + aRnd.y * 40.0), sin(uTime * 0.8 + aRnd.z * 40.0));
+      vec4 mv = modelViewMatrix * vec4(p, 1.0);
+      vec4 pos = projectionMatrix * mv;
+      vec2 nd = pos.xy / pos.w;
+      vec2 dd = (nd - uMouse.xy) * vec2(uAspect, 1.0);
+      float dl = length(dd);
+      float fall = exp(-dl * dl / 0.018) * uMouse.z;
+      vec2 push = dd / (dl + 0.001) * fall * 0.085;
+      pos.xy += vec2(push.x / uAspect, push.y) * pos.w;
+      gl_Position = pos;
+      float tw = 1.0 - 0.28 * uMotion * (0.5 + 0.5 * sin(uTime * (1.0 + aRnd.z * 2.0) + aRnd.x * 30.0));
+      gl_PointSize = uSize * uPR * (0.5 + aRnd.y) * mix(tsize(k0), tsize(k0 + 1.0), f) * (6.0 / -mv.z);
+      vColor = mix(tcolor(k0), tcolor(k0 + 1.0), f);
+      vAlpha = uOpacity * tw;
+    }`;
+  const FRAG = `
+    varying vec3 vColor; varying float vAlpha;
+    void main() {
+      float d = length(gl_PointCoord - 0.5);
+      if (d > 0.5) discard;
+      float a = pow(1.0 - d * 2.0, 2.0);
+      gl_FragColor = vec4(vColor, a * vAlpha);
+    }`;
+  const HALO_V = `varying vec2 vUv; void main(){ vUv = uv; float sc = length(modelMatrix[0].xyz); gl_Position = projectionMatrix * (modelViewMatrix * vec4(0.0,0.0,0.0,1.0) + vec4(position.xy * sc, 0.0, 0.0)); }`;
+  const HALO_F = `uniform vec3 uCol; uniform float uA; varying vec2 vUv;
+    void main(){ float d = length(vUv - 0.5) * 2.0; float a = pow(max(1.0 - d, 0.0), 2.4); gl_FragColor = vec4(uCol, a * uA); }`;
+  const STAR_V = `uniform float uTime, uPR, uOp; attribute float aS; varying float vA;
+    void main(){ vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_Position = projectionMatrix * mv;
+      gl_PointSize = aS * uPR * (1.0 + 0.5 * sin(uTime * 0.8 + position.x * 9.0)) * (30.0 / -mv.z); vA = uOp; }`;
+  const STAR_F = `varying float vA; void main(){ float d = length(gl_PointCoord - 0.5); if(d>0.5) discard; gl_FragColor = vec4(vec3(0.8,0.88,1.0), pow(1.0 - d*2.0, 2.0) * vA * 0.85); }`;
+
+  function mulberry32(a) { return function () { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+  function gauss(r) { return Math.sqrt(-2 * Math.log(r() + 1e-9)) * Math.cos(6.2831853 * r()); }
+
+  function buildData(N) {
+    const r = mulberry32(11);
+    const aLot = new Float32Array(N * 4), aDand = new Float32Array(N * 3), aSun = new Float32Array(N * 3), aIris = new Float32Array(N * 3);
+    const aLogo = new Float32Array(N * 3), aCol = new Float32Array(N * 3), aRnd = new Float32Array(N * 3), zero = new Float32Array(N * 3);
+    const nStem = Math.floor(N * 0.06), nCore = Math.floor(N * 0.05);
+    const nStr = 40, M = Math.ceil((N - nStem) / nStr);
+    const ring = [0.95, 1.4, 1.9];
+    const nrm = [[0.25, 1, 0.1], [-0.5, 1, 0.45], [0.7, 0.9, -0.3]].map((v) => { const l = Math.hypot(...v); return v.map((x) => x / l); });
+    const basis = nrm.map((n) => { let a = Math.abs(n[1]) < 0.9 ? [0, 1, 0] : [1, 0, 0]; const e1 = [n[1] * a[2] - n[2] * a[1], n[2] * a[0] - n[0] * a[2], n[0] * a[1] - n[1] * a[0]]; const l = Math.hypot(...e1); const e1n = e1.map((x) => x / l); const e2 = [n[1] * e1n[2] - n[2] * e1n[1], n[2] * e1n[0] - n[0] * e1n[2], n[0] * e1n[1] - n[1] * e1n[0]]; return [e1n, e2]; });
+    const sc = (x, y) => [(x - 62.2) / 51.9 * 1.3, -(y - 62) / 51.9 * 1.3];
+    const Mseg = [[36.14, 86.64, 36.14, 58.9], [36.14, 58.9, 62.2, 75.7], [62.2, 75.7, 88.3, 58.9], [88.3, 58.9, 88.3, 86.64]];
+    const Mlen = Mseg.map((s) => Math.hypot(s[2] - s[0], s[3] - s[1])), Mtot = Mlen.reduce((a, b) => a + b, 0);
+    let cDand = 0;
+    for (let i = 0; i < N; i++) {
+      const rx = r(), ry = r(), rz = r();
+      aRnd[i * 3] = rx; aRnd[i * 3 + 1] = ry; aRnd[i * 3 + 2] = rz;
+      /* lotus parameters */
+      const isStem = i < nStem, isCore = !isStem && i < nStem + nCore;
+      if (isStem) { aLot.set([0, 3, i / nStem + (r() - 0.5) * 0.004, 0], i * 4); }
+      else if (isCore) { aLot.set([0, 4, 0, 0], i * 4); }
+      else {
+        const lr = r(), layer = lr < 0.4 ? 0 : lr < 0.74 ? 1 : 2, n = [9, 7, 5][layer];
+        const phi = (Math.floor(r() * n) + [0, 0.5, 0.25][layer]) / n * 6.2831853;
+        const u = Math.pow(r(), 0.85), q = r();
+        const v = q < 0.55 ? (r() < 0.5 ? -1 : 1) * (0.92 + r() * 0.08) : q < 0.67 ? (r() - 0.5) * 0.08 : r() * 2 - 1;
+        aLot.set([phi, layer, u, v], i * 4);
+      }
+      /* dandelion */
+      if (isStem) {
+        const t = aLot[i * 4 + 2]; aDand.set([(r() - 0.5) * 0.03, -3.7 + (3.65) * t, (r() - 0.5) * 0.03], i * 3);
+      } else {
+        const c = cDand++, s = c % M, t = Math.floor(c / M);
+        const h = Math.abs(Math.sin(s * 12.9898) * 43758.5453) % 1;
+        const R = 1.12 + 0.22 * h, r0 = 0.16, k = Math.min(1, t / (nStr - 1));
+        const ph = Math.acos(1 - 2 * (s + 0.5) / M), th = 3.14159265 * (1 + Math.sqrt(5)) * s;
+        const dir = [Math.sin(ph) * Math.cos(th), Math.cos(ph), Math.sin(ph) * Math.sin(th)];
+        let rr = r0 + (R - r0) * Math.pow(k, 0.85), jit = 0.012, px = 0, py = 0, pz = 0;
+        if (t >= nStr - 3) { px = gauss(r) * 0.05; py = gauss(r) * 0.05; pz = gauss(r) * 0.05; }
+        aDand.set([dir[0] * rr + px + gauss(r) * jit, dir[1] * rr + py + gauss(r) * jit, dir[2] * rr + pz + gauss(r) * jit], i * 3);
+      }
+      /* sun: core, three tilted rings, dust */
+      const cs = r();
+      if (cs < 0.13) aSun.set([gauss(r) * 0.16, gauss(r) * 0.16, gauss(r) * 0.16], i * 3);
+      else if (cs < 0.75) {
+        const k = Math.floor(r() * 3), R = ring[k] * (1 + gauss(r) * 0.012), al = r() * 6.2831853, [e1, e2] = basis[k], jn = gauss(r) * 0.035;
+        aSun.set([R * (Math.cos(al) * e1[0] + Math.sin(al) * e2[0]) + nrm[k][0] * jn, R * (Math.cos(al) * e1[1] + Math.sin(al) * e2[1]) + nrm[k][1] * jn, R * (Math.cos(al) * e1[2] + Math.sin(al) * e2[2]) + nrm[k][2] * jn], i * 3);
+      } else {
+        const rr = 0.35 + 2.2 * Math.pow(r(), 1.6), z = r() * 2 - 1, ph = r() * 6.2831853, sq = Math.sqrt(1 - z * z);
+        aSun.set([rr * sq * Math.cos(ph), rr * z, rr * sq * Math.sin(ph)], i * 3);
+      }
+      /* iris / gantry */
+      if (r() < 0.07) { const a = r() * 6.2831853, rr = 1.38 + gauss(r) * 0.012; aIris.set([rr * Math.cos(a), rr * Math.sin(a), gauss(r) * 0.02], i * 3); }
+      else {
+        const st = Math.floor(r() * 700), rr = 0.55 + 0.8 * Math.pow(r(), 0.75);
+        const a = st / 700 * 6.2831853 + (r() - 0.5) * 0.004 + 0.05 * Math.sin(rr * 18 + st);
+        aIris.set([rr * Math.cos(a), rr * Math.sin(a), (r() - 0.5) * 0.08 + 0.05 * Math.sin(a * 3)], i * 3);
+      }
+      /* logo */
+      const cl = r();
+      let lx, ly, col;
+      if (cl < 0.22) { const a = r() * 6.2831853, rr = 51.9 + gauss(r) * 0.7; lx = 62.2 + rr * Math.cos(a); ly = 62 + rr * Math.sin(a); col = [0.3, 0.95, 0.85]; }
+      else if (cl < 0.58) {
+        let m = r() * Mtot, k = 0; while (k < 3 && m > Mlen[k]) { m -= Mlen[k]; k++; }
+        const sg = Mseg[k], t = m / Mlen[k], dx = sg[2] - sg[0], dy = sg[3] - sg[1], l = Math.hypot(dx, dy), off = (r() - 0.5) * 8.1;
+        lx = sg[0] + dx * t - dy / l * off; ly = sg[1] + dy * t + dx / l * off; col = [1, 1, 1];
+      } else if (cl < 0.68) {
+        if (r() < 0.5) { lx = 51.75 + r() * 21.1; ly = 32.3 + r() * 7.8; } else { lx = 58.4 + r() * 7.8; ly = 25.65 + r() * 21.2; }
+        col = [1, 1, 1];
+      } else if (cl < 0.76) {
+        lx = 37.3 + r() * 50; ly = 98.9 - 2.45 * Math.cos(6.2831853 * (lx - 44.6) / 25.5) + (r() - 0.5) * 3.9; col = [0.7, 0.92, 0.9];
+      } else { const a = r() * 6.2831853, rr = 49 * Math.sqrt(r()); lx = 62.2 + rr * Math.cos(a); ly = 62 + rr * Math.sin(a); col = [0.08, 0.5, 0.45]; }
+      const [wx, wy] = sc(lx, ly);
+      aLogo.set([wx, wy, (r() - 0.5) * 0.05], i * 3); aCol.set(col, i * 3);
+    }
+    return { aLot, aDand, aSun, aIris, aLogo, aCol, aRnd, zero };
+  }
+
+  let gl = null;
+  function initGL() {
+    if (!window.THREE) return;
+    const T = THREE, canvas = $('#gl');
+    let renderer;
+    try { renderer = new T.WebGLRenderer({ canvas, antialias: false, alpha: true, powerPreference: 'high-performance' }); } catch (e) { return; }
+    renderer.setClearColor(0x000000, 0);
+    const scene = new T.Scene(), cam = new T.PerspectiveCamera(42, 1, 0.1, 100);
+    cam.position.set(0, 0, 5.4);
+    const N = innerWidth < 900 ? 8000 : 15000;
+    const d = buildData(N);
+    const geo = new T.BufferGeometry();
+    geo.setAttribute('position', new T.BufferAttribute(d.zero, 3));
+    geo.setAttribute('aLot', new T.BufferAttribute(d.aLot, 4));
+    for (const k of ['aDand', 'aSun', 'aIris', 'aLogo', 'aCol', 'aRnd']) geo.setAttribute(k, new T.BufferAttribute(d[k], 3));
+    const U = { uTime: { value: 0 }, uStage: { value: 0 }, uOpen: { value: 0 }, uPR: { value: 1 }, uSize: { value: 4.2 }, uOpacity: { value: 1 }, uMotion: { value: 1 }, uIntro: { value: 0 }, uAspect: { value: 1 }, uMouse: { value: new T.Vector3(9, 9, 0) } };
+    const mat = new T.ShaderMaterial({ uniforms: U, vertexShader: VERT, fragmentShader: FRAG, transparent: true, depthWrite: false, depthTest: false, blending: T.AdditiveBlending });
+    const pts = new T.Points(geo, mat); pts.frustumCulled = false;
+    const group = new T.Group(); group.add(pts); scene.add(group);
+    /* halos: two additive discs that follow the group */
+    const halos = [1, 2.6].map((m, i) => {
+      const hm = new T.ShaderMaterial({ uniforms: { uCol: { value: new T.Vector3(0.45, 0.62, 1) }, uA: { value: 0.5 } }, vertexShader: HALO_V, fragmentShader: HALO_F, transparent: true, depthWrite: false, depthTest: false, blending: T.AdditiveBlending });
+      const mesh = new T.Mesh(new T.PlaneGeometry(2, 2), hm); mesh.frustumCulled = false; mesh.userData.m = m; mesh.userData.a = i ? 0.35 : 0.8; scene.add(mesh); return mesh;
+    });
+    /* stars */
+    const nS = 1400, sp = new Float32Array(nS * 3), ss = new Float32Array(nS), rs = mulberry32(5);
+    for (let i = 0; i < nS; i++) { const rr = 9 + rs() * 22, z = rs() * 2 - 1, ph = rs() * 6.2831853, q = Math.sqrt(1 - z * z); sp.set([rr * q * Math.cos(ph), rr * z, rr * q * Math.sin(ph) - 6], i * 3); ss[i] = 0.8 + rs() * 1.8; }
+    const sg = new T.BufferGeometry(); sg.setAttribute('position', new T.BufferAttribute(sp, 3)); sg.setAttribute('aS', new T.BufferAttribute(ss, 1));
+    const sU = { uTime: { value: 0 }, uPR: { value: 1 }, uOp: { value: 1 } };
+    const stars = new T.Points(sg, new T.ShaderMaterial({ uniforms: sU, vertexShader: STAR_V, fragmentShader: STAR_F, transparent: true, depthWrite: false, blending: T.AdditiveBlending }));
+    stars.frustumCulled = false; scene.add(stars);
+    gl = { renderer, scene, cam, group, U, halos, sU, stars };
+    resizeGL();
+  }
+  function resizeGL() {
+    if (!gl) return;
+    const pr = Math.min(window.devicePixelRatio || 1, innerWidth < 900 ? 1.5 : 2);
+    gl.renderer.setPixelRatio(pr); gl.renderer.setSize(innerWidth, innerHeight, false);
+    gl.cam.aspect = innerWidth / innerHeight; gl.cam.updateProjectionMatrix();
+    gl.U.uPR.value = pr; gl.sU.uPR.value = pr; gl.U.uAspect.value = innerWidth / innerHeight;
+  }
+
+  const mouse = { x: 0, y: 0, tx: 0, ty: 0, px: 9, py: 9, ptx: 9, pty: 9, act: 0, want: 0 };
+  addEventListener('pointermove', (e) => {
+    mouse.tx = (e.clientX / innerWidth - 0.5) * 2; mouse.ty = (e.clientY / innerHeight - 0.5) * 2;
+    if (e.pointerType === 'touch') return;
+    mouse.ptx = mouse.tx; mouse.pty = -mouse.ty; mouse.want = 1;
+    if (mouse.px > 5) { mouse.px = mouse.ptx; mouse.py = mouse.pty; }
+  }, { passive: true });
+  document.addEventListener('pointerleave', () => { mouse.want = 0; });
+  let introT0 = -1;
+  const skyEl = $('#sky'), beamEl = $('#beam'), heroLead = $('.hero-lead'), heroBottom = $('.hero-bottom'), finSpace = $('.fin-space');
+  let smoothY = -1, last = performance.now();
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    scrollY = window.scrollY;
+    if (smoothY < 0) smoothY = scrollY;
+    smoothY += (scrollY - smoothY) * (1 - Math.exp(-dt * 9));
+    updateDom(); updateNavActive();
+    const p = paramsAt(smoothY);
+    skyEl.style.opacity = p.sky.toFixed(3);
+    beamEl.style.opacity = p.beam.toFixed(3);
+    beamEl.style.transform = 'translate(-50%,-50%) translate(' + ((1 - p.beam) * 30).toFixed(1) + 'vw,' + ((1 - p.beam) * 18).toFixed(1) + 'vh) rotate(-38deg)';
+    if (gl) {
+      const motion = reduceMq.matches ? 0 : 1, T = now / 1000;
+      mouse.x += (mouse.tx - mouse.x) * 0.05; mouse.y += (mouse.ty - mouse.y) * 0.05;
+      const U = gl.U, narrow = clamp((innerWidth / innerHeight) / 1.4, 0.35, 1), k = story ? 1 : 0.85;
+      let stg = p.stage;
+      if (!story && finSpace && stg >= 3) stg = Math.max(stg, 3 + clamp((innerHeight - finSpace.getBoundingClientRect().top) / (innerHeight * 0.7)));
+      U.uTime.value = T; U.uStage.value = stg; U.uOpen.value = p.open; if (introT0 < 0) introT0 = now;
+      const intro = motion ? clamp((now - introT0) / 2600) : 1;
+      mouse.px += (mouse.ptx - mouse.px) * 0.16; mouse.py += (mouse.pty - mouse.py) * 0.16;
+      mouse.act += (mouse.want * motion - mouse.act) * 0.08;
+      U.uIntro.value = intro; U.uMouse.value.set(mouse.px, mouse.py, mouse.act);
+      let fo = story ? 1 : 0.55 - 0.3 * clamp((p.open - 0.5) * 2) * clamp(1 - p.stage); U.uMotion.value = motion;
+      U.uSize.value = 4.2 * (0.6 + 0.4 * p.scale) * (innerWidth < 700 ? 0.8 : 1);
+      let gx = p.ox * narrow * (story ? 1 : 0.25), gyy = p.oy * (story ? 1 : 0.7), gsc = p.scale * k * (story ? 1 : Math.min(1, 0.5 + narrow * 0.45));
+      if (!story) {
+        /* stacked layout: the logo rides in the empty slot between the hero text blocks, and above the closing wordmark */
+        const hh2 = innerHeight / 2, ppw = hh2 / 2.0728;
+        const toSlot = (rect, w, maxD) => {
+          if (w <= 0.001 || rect.height < 60) return;
+          const d = Math.max(110, Math.min(rect.height * 0.92, innerWidth * 0.6, maxD));
+          gx += ((((rect.left + rect.right) / 2 - innerWidth / 2) / ppw) - gx) * w;
+          gyy += (((hh2 - (rect.top + rect.bottom) / 2) / ppw) - gyy) * w;
+          gsc += ((d / ppw) / 2.8 - gsc) * w;
+          fo += (0.92 - fo) * w;
+        };
+        if (heroLead && heroBottom) {
+          const a = heroLead.getBoundingClientRect(), b = heroBottom.getBoundingClientRect();
+          toSlot({ left: 0, right: innerWidth, top: a.bottom, bottom: b.top, height: b.top - a.bottom }, 1 - clamp(scrollY / (innerHeight * 0.8)), 320);
+        }
+        if (finSpace) toSlot(finSpace.getBoundingClientRect(), clamp((stg - 3.2) / 0.8), 340);
+      }
+      U.uOpacity.value = p.op * fo;
+      gl.group.position.set(gx, gyy, 0);
+      gl.group.scale.setScalar(gsc);
+      gl.group.rotation.y = Math.sin(T * 0.25) * 0.45 * p.spin * motion;
+      gl.group.rotation.z = Math.sin(T * 0.55) * 0.045 * motion * clamp(1 - p.stage);
+      gl.group.rotation.x = mouse.y * 0.1 * motion + 0.3 * clamp(1 - p.stage) * p.open;
+      gl.cam.position.x = mouse.x * 0.35 * motion; gl.cam.position.y = -mouse.y * 0.2 * motion; gl.cam.lookAt(0, 0, 0);
+      const gp = gl.group.position, gs = gl.group.scale.x;
+      gl.halos.forEach((h) => {
+        const m = h.userData.m, mu = h.material.uniforms;
+        h.position.set(gp.x, gp.y + p.gy * gs, 0);
+        h.scale.setScalar(p.hs * gs * m * 0.9);
+        mu.uCol.value.set(p.gr, p.gg, p.gb); mu.uA.value = p.glow * h.userData.a * p.op * fo * (0.85 + 0.15 * Math.sin(T * 1.3) * motion);
+      });
+      gl.sU.uTime.value = T; gl.sU.uOp.value = 1 - 0.5 * clamp(p.stage / 3);
+      gl.stars.rotation.y = T * 0.004 * motion + smoothY * 0.00008; gl.stars.rotation.x = smoothY * 0.00004;
+      gl.renderer.render(gl.scene, gl.cam);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  /* =============== boot =============== */
+  initGL();
+  addEventListener('resize', () => { resizeGL(); measure(); });
+  storyMq.addEventListener ? storyMq.addEventListener('change', setMode) : storyMq.addListener(setMode);
+  if (window.ResizeObserver) new ResizeObserver(() => measure()).observe(document.body);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure);
+  setMode();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
